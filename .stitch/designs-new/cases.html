@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>المستشار القانوني الذكي - إدارة القضايا</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#006b34",
+                        "background-light": "#f5f8f7",
+                        "background-dark": "#0f2319",
+                    },
+                    fontFamily: {
+                        "display": ["Cairo", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex flex-col md:flex-row min-h-screen">
+<!-- Sidebar Navigation -->
+<aside class="w-72 bg-white border-l border-primary/10 flex flex-col h-full">
+<div class="p-6 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">gavel</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-primary text-lg font-bold leading-none">المستشار القانوني</h1>
+<p class="text-slate-500 text-xs mt-1">نظام الذكاء الاصطناعي</p>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-2 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>لوحة التحكم</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary font-bold" href="#">
+<span class="material-symbols-outlined">work</span>
+<span>القضايا</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span>تحليل الذكاء الاصطناعي</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span>المستندات</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span>التقارير القانونية</span>
+</a>
+</nav>
+<div class="p-4 border-t border-primary/5">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>الإعدادات</span>
+</a>
+<div class="mt-4 p-4 bg-primary/5 rounded-xl">
+<p class="text-xs text-slate-500 mb-2">مساحة التخزين</p>
+<div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[65%]"></div>
+</div>
+<p class="text-[10px] text-primary mt-2 font-bold">تم استخدام ٦.٥ جيجابايت من ١٠</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col p-6 lg:p-10 gap-8">
+<!-- Top Navbar -->
+<header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-primary/5">
+<div class="flex flex-col">
+<h2 class="text-2xl font-black tracking-tight">إدارة القضايا القانونية</h2>
+<p class="text-slate-500">مرحباً بك في لوحة تحكم القضايا الخاصة بك</p>
+</div>
+<div class="flex items-center gap-3 w-full md:w-auto">
+<div class="relative flex-1 md:w-64">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full pr-10 pl-4 py-2 bg-background-light dark:bg-background-dark border-none rounded-xl focus:ring-2 focus:ring-primary" placeholder="بحث عن قضية..." type="text"/>
+</div>
+<button class="flex items-center justify-center size-10 bg-background-light dark:bg-background-dark rounded-xl text-slate-600">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">add</span>
+<span>قضية جديدة</span>
+</button>
+</div>
+</header>
+<!-- Statistics Overview -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/5 shadow-sm">
+<p class="text-slate-500 text-sm mb-1">قضايا جديدة</p>
+<div class="flex justify-between items-end">
+<p class="text-3xl font-bold">١٢</p>
+<span class="text-blue-500 material-symbols-outlined text-4xl opacity-20">fiber_new</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/5 shadow-sm">
+<p class="text-slate-500 text-sm mb-1">قيد التحليل</p>
+<div class="flex justify-between items-end">
+<p class="text-3xl font-bold">٠٨</p>
+<span class="text-amber-500 material-symbols-outlined text-4xl opacity-20">analytics</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/5 shadow-sm">
+<p class="text-slate-500 text-sm mb-1">قيد الصياغة</p>
+<div class="flex justify-between items-end">
+<p class="text-3xl font-bold">٠٥</p>
+<span class="text-primary material-symbols-outlined text-4xl opacity-20">edit_note</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/5 shadow-sm">
+<p class="text-slate-500 text-sm mb-1">مكتملة</p>
+<div class="flex justify-between items-end">
+<p class="text-3xl font-bold">٤٢</p>
+<span class="text-emerald-500 material-symbols-outlined text-4xl opacity-20">check_circle</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Case List Section -->
+<div class="lg:col-span-2 flex flex-col gap-4">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">list_alt</span>
+                            قائمة القضايا الحالية
+                        </h3>
+<button class="text-primary text-sm font-semibold hover:underline">عرض الكل</button>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Case Card 1 -->
+<div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-primary/5 shadow-sm hover:border-primary transition-all group">
+<div class="flex justify-between items-start">
+<div class="flex items-start gap-4">
+<div class="size-12 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+<span class="material-symbols-outlined">balance</span>
+</div>
+<div>
+<h4 class="font-bold text-lg group-hover:text-primary transition-colors">نزاع ملكية عقارية - الشيخ زايد</h4>
+<p class="text-sm text-slate-500 mb-2">العميل: شركة الواحة للتطوير</p>
+<div class="flex gap-4">
+<span class="flex items-center gap-1 text-xs text-slate-400">
+<span class="material-symbols-outlined text-xs">calendar_today</span>
+                                                ٢٤ أكتوبر ٢٠٢٣
+                                            </span>
+<span class="flex items-center gap-1 text-xs text-slate-400">
+<span class="material-symbols-outlined text-xs">folder</span>
+                                                مدني
+                                            </span>
+</div>
+</div>
+</div>
+<span class="px-3 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full text-xs font-bold">قيد التحليل</span>
+</div>
+</div>
+<!-- Case Card 2 -->
+<div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-primary/5 shadow-sm hover:border-primary transition-all group">
+<div class="flex justify-between items-start">
+<div class="flex items-start gap-4">
+<div class="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">contract</span>
+</div>
+<div>
+<h4 class="font-bold text-lg group-hover:text-primary transition-colors">مراجعة عقد شراكة دولية</h4>
+<p class="text-sm text-slate-500 mb-2">العميل: السيد/ عمر خالد</p>
+<div class="flex gap-4">
+<span class="flex items-center gap-1 text-xs text-slate-400">
+<span class="material-symbols-outlined text-xs">calendar_today</span>
+                                                ٢١ أكتوبر ٢٠٢٣
+                                            </span>
+<span class="flex items-center gap-1 text-xs text-slate-400">
+<span class="material-symbols-outlined text-xs">folder</span>
+                                                تجاري
+                                            </span>
+</div>
+</div>
+</div>
+<span class="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold">قيد الصياغة</span>
+</div>
+</div>
+<!-- Case Card 3 -->
+<div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-primary/5 shadow-sm hover:border-primary transition-all group">
+<div class="flex justify-between items-start">
+<div class="flex items-start gap-4">
+<div class="size-12 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
+<span class="material-symbols-outlined">verified</span>
+</div>
+<div>
+<h4 class="font-bold text-lg group-hover:text-primary transition-colors">تأسيس شركة مساهمة</h4>
+<p class="text-sm text-slate-500 mb-2">العميل: مجموعة الاستثمار المتحدة</p>
+<div class="flex gap-4">
+<span class="flex items-center gap-1 text-xs text-slate-400">
+<span class="material-symbols-outlined text-xs">calendar_today</span>
+                                                ١٥ أكتوبر ٢٠٢٣
+                                            </span>
+<span class="flex items-center gap-1 text-xs text-slate-400">
+<span class="material-symbols-outlined text-xs">folder</span>
+                                                إداري
+                                            </span>
+</div>
+</div>
+</div>
+<span class="px-3 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full text-xs font-bold">مكتملة</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Create Case Form -->
+<div class="flex flex-col gap-4">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10 shadow-lg">
+<div class="flex items-center gap-2 mb-6">
+<div class="size-8 bg-primary/20 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">add_task</span>
+</div>
+<h3 class="text-lg font-bold">إنشاء قضية جديدة</h3>
+</div>
+<form class="flex flex-col gap-5">
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">عنوان القضية</label>
+<input class="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border-none rounded-xl focus:ring-2 focus:ring-primary" placeholder="مثال: مراجعة عقد عقاري" type="text"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">اسم العميل</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">person</span>
+<input class="w-full pr-10 pl-4 py-2.5 bg-background-light dark:bg-background-dark border-none rounded-xl focus:ring-2 focus:ring-primary" placeholder="ابحث عن عميل أو أضف جديداً" type="text"/>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">وصف القضية</label>
+<textarea class="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border-none rounded-xl focus:ring-2 focus:ring-primary resize-none" placeholder="اكتب تفاصيل وملخص القضية هنا..." rows="4"></textarea>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">تصنيف القضية</label>
+<select class="w-full px-4 py-2.5 bg-background-light dark:bg-background-dark border-none rounded-xl focus:ring-2 focus:ring-primary appearance-none">
+<option>مدني</option>
+<option>جنائي</option>
+<option>تجاري</option>
+<option>أحوال شخصية</option>
+<option>إداري</option>
+</select>
+</div>
+<button class="mt-2 w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary/90 transition-all shadow-md" type="button">
+                                حفظ وإنشاء القضية
+                            </button>
+</form>
+</div>
+<!-- AI Insights Mini-Card -->
+<div class="bg-gradient-to-br from-primary to-emerald-800 p-6 rounded-xl text-white shadow-lg overflow-hidden relative">
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="text-sm font-bold uppercase tracking-wider">تحليل المستشار الذكي</span>
+</div>
+<p class="text-sm opacity-90 leading-relaxed">بناءً على نشاطك الأخير، هناك ٣ قضايا تتطلب مراجعة فورية للمستندات القانونية لضمان الامتثال.</p>
+</div>
+<div class="absolute -bottom-4 -left-4 opacity-10">
+<span class="material-symbols-outlined text-[100px]">psychology</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

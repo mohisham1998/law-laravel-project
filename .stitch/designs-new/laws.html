@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..900&amp;family=Public+Sans:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#006b34",
+                        "secondary-green": "#2FAF74",
+                        "background-light": "#f5f8f7",
+                        "background-dark": "#0f2319",
+                    },
+                    fontFamily: {
+                        "display": ["Cairo", "Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="flex min-h-screen">
+<!-- Sidebar Navigation -->
+<aside class="w-72 bg-white border-l border-primary/10 flex flex-col h-full">
+<div class="p-6 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">gavel</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-primary text-lg font-bold leading-none">المستشار القانوني</h1>
+<p class="text-slate-500 text-xs mt-1">نظام الذكاء الاصطناعي</p>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-2 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary font-bold" href="#">
+<span class="material-symbols-outlined fill-1">dashboard</span>
+<span>لوحة التحكم</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined">work</span>
+<span>القضايا</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span>تحليل الذكاء الاصطناعي</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span>المستندات</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span>التقارير القانونية</span>
+</a>
+</nav>
+<div class="p-4 border-t border-primary/5">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>الإعدادات</span>
+</a>
+<div class="mt-4 p-4 bg-primary/5 rounded-xl">
+<p class="text-xs text-slate-500 mb-2">مساحة التخزين</p>
+<div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[65%]"></div>
+</div>
+<p class="text-[10px] text-primary mt-2 font-bold">تم استخدام ٦.٥ جيجابايت من ١٠</p>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden">
+<!-- Header -->
+<header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between">
+<div class="flex items-center gap-6">
+<h2 class="text-xl font-black text-slate-900 dark:text-white">المطابقة القانونية الذكية</h2>
+<div class="relative w-80">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl pr-10 pl-4 py-2 focus:ring-2 focus:ring-primary/50 text-sm" placeholder="البحث في المواد..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+</button>
+<div class="h-10 w-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-left">
+<p class="text-xs font-bold text-slate-900 dark:text-white">أحمد المحامي</p>
+<p class="text-[10px] text-slate-500">مسؤول الامتثال</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border-2 border-primary/20">
+<img class="w-full h-full object-cover" data-alt="User profile picture of a lawyer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfg0ry2-PbtN0HZaohZL7MgEr9lXx1HGxzoLZ2jYMprM0g4FSK6V49gJPvb9hIQboWFDwGo3KOES79sF_haPBCWEOiBP1fLsjE0_XBrlsVTlE62itvAPT1l4chmC98BIDbo9o2KwQUHL1E-yzshegQc39iDIiSfbCslVFKY7-aXQ5uF2YWLnJE-VNZOMBUsDnoZHHj1Yu2ylTs97tByfYcDIKsynO_oyInYPbAyyKxADhT0RfzZak24rygpJ6ANIh495oR2jxGylJ8"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Content -->
+<div class="flex-1 overflow-y-auto p-8 space-y-6">
+<!-- Page Title & Stats -->
+<div class="flex justify-between items-end">
+<div>
+<h3 class="text-3xl font-black text-slate-900 dark:text-white mb-2">نتائج مطابقة المواد القانونية</h3>
+<p class="text-slate-500 max-w-2xl">تحليل وتحقق آلي من النصوص القانونية مقابل الأدلة المرتبطة باستخدام تقنيات الذكاء الاصطناعي المتطورة.</p>
+</div>
+<button class="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-6 py-2.5 rounded-xl font-bold hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>تصدير التقرير</span>
+</button>
+</div>
+<!-- Stats Cards -->
+<div class="grid grid-cols-3 gap-6">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<div>
+<p class="text-slate-500 text-sm font-bold mb-1">إجمالي المواد</p>
+<h4 class="text-3xl font-black text-slate-900 dark:text-white">124</h4>
+</div>
+<div class="bg-primary/10 p-4 rounded-xl">
+<span class="material-symbols-outlined text-primary text-3xl">list_alt</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<div>
+<p class="text-slate-500 text-sm font-bold mb-1">متوسط الثقة</p>
+<h4 class="text-3xl font-black text-slate-900 dark:text-white">92%</h4>
+</div>
+<div class="bg-secondary-green/10 p-4 rounded-xl">
+<span class="material-symbols-outlined text-secondary-green text-3xl">verified</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<div>
+<p class="text-slate-500 text-sm font-bold mb-1">تنبيهات عدم التطابق</p>
+<h4 class="text-3xl font-black text-red-600">3</h4>
+</div>
+<div class="bg-red-50 p-4 rounded-xl">
+<span class="material-symbols-outlined text-red-600 text-3xl">warning</span>
+</div>
+</div>
+</div>
+<!-- Table UI -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<table class="w-full text-right border-collapse">
+<thead class="bg-slate-50 dark:bg-slate-800/50">
+<tr>
+<th class="px-6 py-4 text-sm font-black text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800">رقم المادة</th>
+<th class="px-6 py-4 text-sm font-black text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800">نص المادة</th>
+<th class="px-6 py-4 text-sm font-black text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800">الدليل المرتبط</th>
+<th class="px-6 py-4 text-sm font-black text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 w-64">درجة الثقة</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5 text-sm font-bold text-slate-900 dark:text-white">المادة 1</td>
+<td class="px-6 py-5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">يلتزم المتعاقدون بتنفيذ بنود العقد وفقاً لمبدأ حسن النية ومعايير النزاهة المهنية.</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-[14px]">link</span>
+                                        العقد الأساسي - فقرة 4
+                                    </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-secondary-green" style="width: 95%;"></div>
+</div>
+<span class="text-sm font-black text-slate-900 dark:text-white">95%</span>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5 text-sm font-bold text-slate-900 dark:text-white">المادة 5</td>
+<td class="px-6 py-5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">يجب إخطار الطرف الآخر بأي تغيير في العناوين المسجلة خلال مدة لا تتجاوز 10 أيام.</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-[14px]">link</span>
+                                        محضر الاجتماع الدوري
+                                    </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-secondary-green" style="width: 88%;"></div>
+</div>
+<span class="text-sm font-black text-slate-900 dark:text-white">88%</span>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5 text-sm font-bold text-slate-900 dark:text-white">المادة 12</td>
+<td class="px-6 py-5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">تخضع المنازعات الناشئة عن هذا العقد للقضاء المحلي في الدائرة القضائية المعتمدة.</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-[14px]">link</span>
+                                        ملحق التحكيم الخاص
+                                    </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-secondary-green" style="width: 92%;"></div>
+</div>
+<span class="text-sm font-black text-slate-900 dark:text-white">92%</span>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5 text-sm font-bold text-slate-900 dark:text-white">المادة 20</td>
+<td class="px-6 py-5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">يعتبر هذا العقد نافذاً من تاريخ التوقيع عليه من قبل المخولين قانوناً.</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-[14px]">link</span>
+                                        شهادة التسجيل الرسمية
+                                    </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-secondary-green" style="width: 100%;"></div>
+</div>
+<span class="text-sm font-black text-slate-900 dark:text-white">100%</span>
+</div>
+</td>
+</tr>
+<!-- Row 5 (Low Confidence Example) -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5 text-sm font-bold text-slate-900 dark:text-white">المادة 32</td>
+<td class="px-6 py-5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-md">يتم تسوية الرسوم والضرائب المستحقة في نهاية كل ربع مالي بانتظام.</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 text-xs font-bold text-red-700">
+<span class="material-symbols-outlined text-[14px]">error</span>
+                                        لا يوجد دليل مباشر
+                                    </span>
+</td>
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-orange-400" style="width: 45%;"></div>
+</div>
+<span class="text-sm font-black text-slate-900 dark:text-white">45%</span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Footer Pagination-like actions -->
+<div class="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800">
+<p class="text-sm text-slate-500">عرض 1-5 من أصل 124 مادة قانونية</p>
+<div class="flex gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+<button class="px-4 h-10 flex items-center justify-center rounded-lg bg-primary text-white font-bold">1</button>
+<button class="px-4 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors">2</button>
+<button class="px-4 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors">3</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

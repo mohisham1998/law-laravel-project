@@ -1,0 +1,30 @@
+<!-- Settings Page -->
+<div class="min-h-screen bg-[#f8f6f3] font-sans">
+  <header class="bg-[#1e3a5f] text-white px-6 py-4">
+    <h1 class="text-xl font-semibold">Settings</h1>
+  </header>
+  <main class="max-w-2xl mx-auto p-6 space-y-6">
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-[#e2e8f0]">
+      <h3 class="font-semibold text-[#2d3748] mb-4">Model Selection</h3>
+      <select class="w-full border border-[#e2e8f0] rounded-lg px-4 py-3">
+        <option>anthropic/claude-3.5-sonnet</option>
+      </select>
+    </div>
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-[#e2e8f0]">
+      <h3 class="font-semibold text-[#2d3748] mb-4">Confidence Threshold</h3>
+      <input type="range" min="0.5" max="0.9" step="0.05" class="w-full">
+      <p class="text-sm text-[#718096] mt-2">0.70 (Statute match confidence)</p>
+    </div>
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-[#e2e8f0]">
+      <h3 class="font-semibold text-[#2d3748] mb-4">Cost Breakdown</h3>
+      <p class="text-[#718096] text-sm mb-2">Total tokens: 1,234,567</p>
+      <p class="text-[#718096] text-sm mb-2">Total cost: $37.04 USD / 138.90 SAR</p>
+      <button class="text-[#1e3a5f] hover:underline">Export CSV</button>
+    </div>
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-[#e2e8f0]">
+      <h3 class="font-semibold text-[#2d3748] mb-4">API Token</h3>
+      <button class="px-4 py-2 bg-[#c53030] text-white rounded-lg">Regenerate Token</button>
+      <p class="text-sm text-[#718096] mt-2">Current token will be revoked</p>
+    </div>
+  </main>
+</div>

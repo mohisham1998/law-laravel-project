@@ -1,0 +1,143 @@
+<?php
+
+return [
+    'navigation' => [
+        'dashboard' => 'لوحة التحكم',
+        'cases' => 'القضايا',
+        'documents' => 'المستندات',
+        'evidence' => 'مستودع الأدلة',
+        'errors' => 'سجل الأخطاء',
+        'laws' => 'الأنظمة المطلوبة',
+        'outputs' => 'المخرجات',
+    ],
+    
+    'actions' => [
+        'view' => 'عرض',
+        'edit' => 'تعديل',
+        'delete' => 'حذف',
+        'restore' => 'استعادة',
+        'force_delete' => 'حذف نهائي',
+        'retry' => 'إعادة المحاولة',
+        'preview' => 'معاينة',
+        'download' => 'تحميل',
+        'upload' => 'رفع',
+        'create' => 'إنشاء',
+        'save' => 'حفظ',
+        'cancel' => 'إلغاء',
+        'close' => 'إغلاق',
+        'search' => 'بحث',
+        'filter' => 'تصفية',
+        'export' => 'تصدير',
+        'import' => 'استيراد',
+    ],
+    
+    'labels' => [
+        'id' => 'المعرف',
+        'title' => 'العنوان',
+        'status' => 'الحالة',
+        'progress' => 'التقدم',
+        'user' => 'المستخدم',
+        'created_at' => 'تاريخ الإنشاء',
+        'updated_at' => 'تاريخ التحديث',
+        'deleted_at' => 'تاريخ الحذف',
+        'filename' => 'اسم الملف',
+        'file_type' => 'نوع الملف',
+        'file_size' => 'حجم الملف',
+        'evidence_type' => 'نوع الدليل',
+        'relevance_score' => 'درجة الصلة',
+        'notes' => 'ملاحظات',
+        'intake_text' => 'نص القضية',
+        'started_at' => 'تاريخ البدء',
+        'completed_at' => 'تاريخ الإنجاز',
+        'last_failed_phase' => 'المرحلة الفاشلة',
+        'last_error_message' => 'رسالة الخطأ',
+        'law_title' => 'عنوان النظام',
+        'law_code' => 'رمز النظام',
+        'error_type' => 'نوع الخطأ',
+        'message' => 'الرسالة',
+    ],
+    
+    'statuses' => [
+        'pending' => 'قيد الانتظار',
+        'processing' => 'قيد المعالجة',
+        'completed' => 'مكتملة',
+        'failed' => 'فشلت',
+        'active' => 'نشط',
+        'inactive' => 'غير نشط',
+    ],
+    
+    'evidence_types' => [
+        'contract' => 'عقد',
+        'correspondence' => 'مراسلات',
+        'evidence' => 'دليل',
+        'statute' => 'نظام',
+        'expert_report' => 'تقرير خبير',
+        'witness_statement' => 'شهادة شاهد',
+        'other' => 'أخرى',
+    ],
+    
+    'error_types' => [
+        'validation' => 'خطأ تحقق',
+        'processing' => 'خطأ معالجة',
+        'api' => 'خطأ API',
+        'storage' => 'خطأ تخزين',
+        'other' => 'أخرى',
+    ],
+    
+    'placeholders' => [
+        'search_cases' => 'البحث في العنوان أو نص القضية...',
+        'search_documents' => 'البحث في أسماء الملفات...',
+        'select_case' => 'اختر قضية',
+        'select_document' => 'اختر مستند',
+        'select_status' => 'اختر الحالة',
+        'select_type' => 'اختر النوع',
+    ],
+    
+    'headings' => [
+        'case_details' => 'تفاصيل القضية',
+        'error_details' => 'تفاصيل الخطأ',
+        'documents' => 'المستندات',
+        'evidence_repository' => 'مستودع الأدلة',
+        'required_laws' => 'الأنظمة المطلوبة',
+        'outputs' => 'المخرجات',
+        'statistics' => 'الإحصائيات',
+    ],
+    
+    'descriptions' => [
+        'retry_confirmation' => 'سيتم استئناف المعالجة من المرحلة الفاشلة',
+        'delete_confirmation' => 'هل أنت متأكد من حذف هذا العنصر؟',
+        'force_delete_confirmation' => 'سيتم حذف هذا العنصر نهائياً ولا يمكن استعادته',
+        'restore_confirmation' => 'هل تريد استعادة هذا العنصر؟',
+    ],
+    
+    'notifications' => [
+        'processing_resumed' => 'تم استئناف المعالجة',
+        'item_created' => 'تم إنشاء العنصر بنجاح',
+        'item_updated' => 'تم تحديث العنصر بنجاح',
+        'item_deleted' => 'تم حذف العنصر بنجاح',
+        'item_restored' => 'تم استعادة العنصر بنجاح',
+        'upload_success' => 'تم رفع الملف بنجاح',
+        'upload_failed' => 'فشل رفع الملف',
+        'invalid_file_type' => 'نوع الملف غير مدعوم',
+        'file_too_large' => 'حجم الملف أكبر من الحد المسموح',
+    ],
+    
+    'filters' => [
+        'from_date' => 'من تاريخ',
+        'to_date' => 'إلى تاريخ',
+        'date_range' => 'نطاق التاريخ',
+        'show_deleted' => 'إظهار المحذوفات',
+        'only_deleted' => 'المحذوفات فقط',
+        'without_deleted' => 'بدون المحذوفات',
+    ],
+    
+    'stats' => [
+        'total_cases' => 'إجمالي القضايا',
+        'processing_cases' => 'قيد المعالجة',
+        'completed_cases' => 'مكتملة',
+        'failed_cases' => 'فشلت',
+        'average_progress' => 'متوسط التقدم',
+        'recent_cases' => 'القضايا الحديثة',
+        'monthly_cases' => 'القضايا الشهرية',
+    ],
+];

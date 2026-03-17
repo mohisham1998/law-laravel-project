@@ -1,0 +1,33 @@
+# Queue worker image for Laravel Horizon
+FROM php:8.4-cli-alpine
+
+# Install system dependencies (including GD for mpdf)
+RUN apk add --no-cache \
+    postgresql-dev \
+    libzip-dev \
+    icu-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    linux-headers \
+    $PHPIZE_DEPS
+
+# Install PHP extensions (including GD for mpdf)
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo pdo_pgsql pgsql zip intl opcache pcntl posix gd
+
+# Install Redis extension
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps
+
+WORKDIR /var/www/html
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY . .
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/custom.ini
+
+CMD ["php", "artisan", "horizon"]

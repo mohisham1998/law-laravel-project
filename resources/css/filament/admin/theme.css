@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --primary: 0 107 52;
+    --secondary-green: 47 175 116;
+    --background-light: 245 248 247;
+    --background-dark: 15 35 25;
+    --border-gray: 229 231 235;
+}
+
+body {
+    font-family: 'Cairo', sans-serif !important;
+    background-color: rgb(var(--background-light)) !important;
+}
+
+/* Sidebar styling to match Stitch */
+.fi-sidebar {
+    background: white !important;
+    border-left: 1px solid rgba(0, 107, 52, 0.1) !important;
+}
+
+.fi-sidebar-nav-item {
+    border-radius: 0.75rem !important;
+    transition: all 0.2s !important;
+}
+
+.fi-sidebar-nav-item-active {
+    background: rgba(0, 107, 52, 0.1) !important;
+    color: rgb(0, 107, 52) !important;
+    font-weight: 700 !important;
+}
+
+.fi-sidebar-nav-item:not(.fi-sidebar-nav-item-active):hover {
+    background: rgb(248, 250, 252) !important;
+}
+
+/* Card styling - Notion-like cards */
+.fi-section,
+.fi-card {
+    background: white !important;
+    border: 1px solid rgba(0, 107, 52, 0.1) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+    border-radius: 1rem !important;
+}
+
+/* Header styling */
+.fi-topbar {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(0, 107, 52, 0.05) !important;
+}
+
+/* Button styling */
+.fi-btn-primary {
+    background: rgb(0, 107, 52) !important;
+    border-color: rgb(0, 107, 52) !important;
+}
+
+.fi-btn-primary:hover {
+    background: rgb(0, 90, 44) !important;
+}
+
+/* Table styling */
+.fi-ta-table {
+    border-radius: 1rem !important;
+    overflow: hidden !important;
+}
+
+.fi-ta-header {
+    background: rgb(var(--background-light)) !important;
+    color: rgb(113, 128, 150) !important;
+    font-size: 0.875rem !important;
+}
+
+.fi-ta-row:hover {
+    background: rgb(var(--background-light)) !important;
+}
+
+/* Form inputs */
+.fi-input,
+.fi-select,
+.fi-textarea {
+    border-radius: 0.75rem !important;
+    border-color: rgb(var(--border-gray)) !important;
+    background: rgb(248, 250, 252) !important;
+}
+
+.fi-input:focus,
+.fi-select:focus,
+.fi-textarea:focus {
+    border-color: rgb(0, 107, 52) !important;
+    ring-color: rgba(0, 107, 52, 0.2) !important;
+}
+
+/* Badge styling */
+.fi-badge {
+    border-radius: 0.5rem !important;
+    font-weight: 600 !important;
+}
+
+/* Modal styling */
+.fi-modal-window {
+    border-radius: 1.5rem !important;
+}
+
+/* Search input */
+.fi-global-search-input {
+    border-radius: 0.75rem !important;
+    background: rgb(248, 250, 252) !important;
+}
+
+/* Stats/Widget cards */
+.fi-wi-stats-overview-stat {
+    background: white !important;
+    border: 1px solid rgba(0, 107, 52, 0.1) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+    border-radius: 1rem !important;
+}
+
+/* Pagination */
+.fi-pagination-nav {
+    border-radius: 0.75rem !important;
+}
+
+/* Tabs */
+.fi-tabs-item {
+    border-radius: 0.75rem !important;
+}
+
+.fi-tabs-item-active {
+    background: rgba(0, 107, 52, 0.1) !important;
+    color: rgb(0, 107, 52) !important;
+}
+
+/* Notifications */
+.fi-no {
+    border-radius: 1rem !important;
+}
+
+/* Brand logo area */
+.fi-sidebar-header {
+    padding: 1.5rem !important;
+}
+
+/* Make icons use Material Symbols style */
+.fi-icon {
+    font-family: 'Material Symbols Outlined' !important;
+}
