@@ -3,6 +3,19 @@
 @section('title', $case->title ?? 'تفاصيل القضية')
 
 @section('content')
+@php $statusVal = $case->status->value ?? $case->status; @endphp
+@if(session('success'))
+    <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
+        <span class="material-symbols-outlined text-emerald-600">check_circle</span>
+        <p class="font-medium text-emerald-800">{{ session('success') }}</p>
+    </div>
+@endif
+@if(session('error'))
+    <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3">
+        <span class="material-symbols-outlined text-red-600">error</span>
+        <p class="font-medium text-red-800">{{ session('error') }}</p>
+    </div>
+@endif
 {{-- Breadcrumb: back on the left, current page on the right (no duplicate arrow) --}}
 <div class="flex justify-between items-center mb-6">
     <a href="{{ route('cases.index') }}" class="flex items-center gap-1.5 text-sm text-slate-600 hover:text-primary transition-colors" title="العودة للقضايا">
@@ -11,6 +24,34 @@
     </a>
     <span class="text-sm text-slate-900 font-semibold">{{ $case->title ?? 'تفاصيل القضية' }}</span>
 </div>
+
+{{-- Pipeline Tracker (full-width, above grid) --}}
+@include('components.pipeline-tracker', ['case' => $case, 'statusVal' => $statusVal])
+
+{{-- Phase 3 Gate: Judicial Arbitration (full-width, prominent banner) --}}
+@if(in_array($statusVal, ['phase2_completed', 'completed_with_warnings']) && $case->phase < 3)
+<div id="phase3GateBanner" class="bg-gradient-to-r from-indigo-50 to-indigo-100 p-6 rounded-xl border-2 border-indigo-300 shadow-sm mb-6">
+    <div class="flex items-center gap-4 flex-wrap">
+        <div class="flex-shrink-0 w-12 h-12 bg-indigo-200 rounded-full flex items-center justify-center">
+            <span class="material-symbols-outlined text-indigo-700 text-2xl">balance</span>
+        </div>
+        <div class="flex-1 min-w-0">
+            <h3 class="font-bold text-lg text-slate-900 mb-1">المرحلة الثالثة — التحكيم القضائي</h3>
+            <p class="text-sm text-slate-600">
+                اكتملت المرحلة الثانية بنجاح. يمكنك الآن تشغيل المرحلة الثالثة: القاضي → محامي الخصم → وكيل التحصين.
+            </p>
+        </div>
+        <form action="{{ route('cases.start-phase3', $case) }}" method="POST" class="flex-shrink-0 puter-form">
+            @csrf
+            <input type="hidden" name="puter_token" class="puter-token-input" value="">
+            <button type="submit" class="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 active:scale-95 transition-all shadow-lg text-base">
+                <span class="material-symbols-outlined text-xl">gavel</span>
+                بدء التحكيم القضائي
+            </button>
+        </form>
+    </div>
+</div>
+@endif
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     {{-- Main Content --}}
@@ -32,13 +73,25 @@
                     </div>
                 </div>
                 <span class="px-4 py-2 rounded-full text-sm font-bold
-                    @if($case->status == 'phase3_completed') bg-emerald-100 text-emerald-700
-                    @elseif($case->status == 'phase2_processing') bg-amber-100 text-amber-700
+                    @if($statusVal === 'phase3_completed' || $statusVal === 'completed_with_warnings') bg-emerald-100 text-emerald-700
+                    @elseif(in_array($statusVal, ['phase1_pending', 'phase1_processing', 'phase2_pending', 'phase2_processing', 'phase3_pending', 'phase3_processing'], true)) bg-amber-100 text-amber-700
+                    @elseif($statusVal === 'awaiting_laws') bg-blue-100 text-blue-700
+                    @elseif($statusVal === 'failed' || $statusVal === 'paused') bg-red-100 text-red-700
+                    @elseif($statusVal === 'halted' || $statusVal === 'timed_out') bg-orange-100 text-orange-700
                     @else bg-blue-100 text-blue-700
                     @endif
                 ">
-                    @if($case->status == 'phase3_completed') مكتملة
-                    @elseif($case->status == 'phase2_processing') قيد التحليل
+                    @if($statusVal === 'completed_with_warnings') مكتملة بتحذيرات
+                    @elseif($statusVal === 'phase3_completed') مكتملة
+                    @elseif($statusVal === 'phase1_pending' || $statusVal === 'phase1_processing') جاري التحليل...
+                    @elseif($statusVal === 'phase2_pending' || $statusVal === 'phase2_processing') قيد التحليل (المرحلة ٢)
+                    @elseif($statusVal === 'awaiting_laws') بانتظار الموافقة
+                    @elseif($statusVal === 'phase2_completed') المرحلة ٢ مكتملة
+                    @elseif($statusVal === 'phase3_pending' || $statusVal === 'phase3_processing') قيد التحكيم (المرحلة ٣)
+                    @elseif($statusVal === 'failed') فشل
+                    @elseif($statusVal === 'paused') متوقف
+                    @elseif($statusVal === 'halted') توقف المعالجة
+                    @elseif($statusVal === 'timed_out') انتهت المهلة
                     @else جديدة
                     @endif
                 </span>
@@ -46,6 +99,24 @@
             @if($case->model_used ?? null)
                 <p class="text-sm text-slate-500 mt-1">النموذج: {{ $case->model_used }}</p>
             @endif
+
+            @if(in_array($statusVal, ['phase1_pending', 'phase1_processing', 'phase2_pending', 'phase2_processing', 'phase3_pending', 'phase3_processing'], true))
+                <div class="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-amber-600 animate-pulse">progress_activity</span>
+                    <div>
+                        <p class="font-semibold text-amber-800">
+                            @if(in_array($statusVal, ['phase3_pending', 'phase3_processing']))
+                                جاري التحكيم القضائي (المرحلة الثالثة)
+                            @else
+                                جاري تحليل القضية
+                            @endif
+                        </p>
+                        <p class="text-sm text-amber-700">يتم عرض المخرجات بشكل مباشر أدناه.</p>
+                    </div>
+                </div>
+            @endif
+
+            @include('pages.cases.show-retry-section', ['case' => $case, 'statusVal' => $statusVal])
 
             <div class="prose prose-slate max-w-none">
                 <h4 class="font-bold text-slate-900">وصف القضية</h4>
@@ -56,13 +127,15 @@
         {{-- Phase 2 Approval Modal (shows when awaiting_laws) --}}
         @include('components.phase2-approval-modal', ['case' => $case])
 
-        {{-- Live Agent Dashboard (real-time streaming with auto-refresh) --}}
-        @include('components.agent-timeline-live', ['case' => $case])
-        @include('components.agent-output-panel', ['case' => $case, 'agentNumber' => $case->agentExecutions?->whereIn('status', ['in_progress', 'retrying'])->first()?->agent_number ?? 3, 'content' => $sampleOutputText ?? ''])
-        @include('components.output-chain', ['case' => $case])
-        @include('components.pdf-export-button', ['case' => $case])
+        {{-- Phase 3 gate moved to full-width above grid (see above) --}}
 
-        @if(in_array($case->status->value ?? $case->status, ['phase2_completed', 'phase3_completed'], true))
+        {{-- Live Agent Dashboard (real-time streaming with auto-refresh) --}}
+        @include('components.agent-timeline-live', ['case' => $case, 'statusVal' => $statusVal])
+        {{-- agent-output-panel removed (FR-003: single consolidated output in agent cards) --}}
+        {{-- output-chain removed (superseded by pipeline-tracker) --}}
+        {{-- pdf-export-button moved to sidebar Quick Actions (FR-008) --}}
+
+        @if(in_array($case->status->value ?? $case->status, ['phase2_completed', 'phase3_completed', 'completed_with_warnings'], true))
             @include('components.case-insights', ['case' => $case])
         @endif
 
@@ -124,10 +197,83 @@
     
     {{-- Sidebar --}}
     <div class="space-y-6">
+        {{-- Retry/Resume Card (only for failed/paused/halted/timed_out) --}}
+        @if(in_array($statusVal, ['failed', 'paused', 'halted', 'timed_out'], true))
+        @php
+            $haltedAtAgent = $case->halted_at_agent ?? $case->current_agent ?? null;
+            $canResume = $haltedAtAgent && $haltedAtAgent > 1;
+        @endphp
+        <div class="rounded-xl shadow-lg overflow-hidden border border-red-200">
+            {{-- Header --}}
+            <div class="bg-gradient-to-br from-red-500 to-red-600 p-5 text-white">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-2xl">
+                        @if(in_array($statusVal, ['halted', 'timed_out'])) stop_circle @else error @endif
+                    </span>
+                    <span class="font-bold text-base">
+                        @if($statusVal === 'halted') توقف عند الوكيل {{ $haltedAtAgent }}
+                        @elseif($statusVal === 'timed_out') انتهت مهلة المعالجة
+                        @else القضية فشلت
+                        @endif
+                    </span>
+                </div>
+                <p class="text-xs opacity-80">المخرجات السابقة محفوظة</p>
+                @if($case->last_error_message)
+                <p class="text-xs mt-1 bg-white/20 rounded px-2 py-1">{{ $case->last_error_message }}</p>
+                @endif
+            </div>
+
+            {{-- Actions --}}
+            <div class="bg-white p-4 space-y-2">
+                @if($canResume)
+                {{-- Resume: green, primary --}}
+                <form action="{{ route('cases.resume', $case) }}" method="POST" class="puter-form">
+                    @csrf
+                    <input type="hidden" name="puter_token" class="puter-token-input" value="">
+                    <button type="submit"
+                            class="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white font-bold py-3 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all shadow-md">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                        <span>استئناف من الوكيل {{ $haltedAtAgent }}</span>
+                    </button>
+                </form>
+                <p class="text-xs text-slate-500 text-center px-1">يستأنف من حيث توقف — مخرجات الوكلاء السابقين محفوظة</p>
+                @endif
+
+                {{-- Full retry: secondary --}}
+                <form action="{{ route('cases.retry-agent', $case) }}" method="POST" class="puter-form">
+                    @csrf
+                    <input type="hidden" name="puter_token" class="puter-token-input" value="">
+                    <button type="submit"
+                            class="w-full flex items-center justify-center gap-2 {{ $canResume ? 'bg-slate-100 text-slate-600 hover:bg-slate-200 text-sm' : 'bg-white border-2 border-red-500 text-red-600 hover:bg-red-50 font-bold' }} py-2.5 rounded-xl active:scale-95 transition-all">
+                        <span class="material-symbols-outlined {{ $canResume ? 'text-sm' : '' }}">refresh</span>
+                        <span>إعادة من البداية</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+        @endif
+        
         {{-- Quick Actions --}}
         <div class="bg-white p-6 rounded-xl border border-primary/10 shadow-sm">
             <h3 class="font-bold mb-4">إجراءات سريعة</h3>
             <div class="space-y-2">
+                @include('components.pdf-export-button', ['case' => $case])
+
+                {{-- Model Configuration Button --}}
+                <button onclick="openModelConfig()"
+                        class="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-primary/10 transition-colors cursor-pointer group">
+                    <span class="material-symbols-outlined text-primary">memory</span>
+                    <div class="flex-1 text-right">
+                        <span class="text-sm font-semibold block">إعداد نماذج الوكلاء</span>
+                        <span class="text-xs text-slate-400">{{ $case->model_used ?? config('openrouter.default_model') }}</span>
+                    </div>
+                    @if(!empty($case->agent_model_overrides))
+                        <span class="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-bold flex-shrink-0">
+                            {{ count($case->agent_model_overrides) }} مخصص
+                        </span>
+                    @endif
+                </button>
+
                 <a href="{{ route('cases.timeline', $case) }}" class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-primary/10 transition-colors">
                     <span class="material-symbols-outlined text-primary">timeline</span>
                     <span class="text-sm font-semibold">عرض الجدول الزمني</span>
@@ -143,43 +289,65 @@
             </div>
         </div>
         
-        {{-- AI Insights --}}
+        {{-- AI Insights (dynamic from QA summary or lead counsel) --}}
+        @php
+            $aiRecommendation = null;
+            // Try QA summary first (agent 9)
+            $qaOutput = $case->outputs->where('agent_number', 9)->whereIn('content_type', ['markdown', 'md'])->sortByDesc('id')->first();
+            if ($qaOutput && !empty(trim($qaOutput->content ?? ''))) {
+                $aiRecommendation = \Illuminate\Support\Str::limit(strip_tags($qaOutput->content), 200);
+            }
+            // Fallback to lead counsel plan (agent 1)
+            if (!$aiRecommendation) {
+                $leadOutput = $case->outputs->where('agent_number', 1)->where('content_type', 'markdown')->first();
+                if ($leadOutput && !empty(trim($leadOutput->content ?? ''))) {
+                    $aiRecommendation = \Illuminate\Support\Str::limit(strip_tags($leadOutput->content), 200);
+                }
+            }
+            // Final fallback: case analysis (agent 0)
+            if (!$aiRecommendation) {
+                $analysisOutput = $case->outputs->where('agent_number', 0)->where('content_type', 'markdown')->first();
+                if ($analysisOutput && !empty(trim($analysisOutput->content ?? ''))) {
+                    $aiRecommendation = \Illuminate\Support\Str::limit(strip_tags($analysisOutput->content), 200);
+                }
+            }
+        @endphp
+        @if($aiRecommendation)
         <div class="bg-gradient-to-br from-primary to-emerald-800 p-6 rounded-xl text-white shadow-lg">
             <div class="flex items-center gap-2 mb-3">
                 <span class="material-symbols-outlined">auto_awesome</span>
                 <span class="font-bold">توصيات الذكاء الاصطناعي</span>
             </div>
-            <p class="text-sm opacity-90">يُنصح بمراجعة نظام العمل المادة ٧٧ لتعزيز موقف القضية.</p>
+            <p class="text-sm opacity-90 leading-relaxed">{{ $aiRecommendation }}</p>
         </div>
+        @elseif(in_array($statusVal, ['phase1_pending','phase1_processing','phase2_pending','phase2_processing','phase3_pending','phase3_processing']))
+        <div class="bg-gradient-to-br from-slate-600 to-slate-700 p-6 rounded-xl text-white shadow-lg">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined animate-pulse">auto_awesome</span>
+                <span class="font-bold">توصيات الذكاء الاصطناعي</span>
+            </div>
+            <p class="text-sm opacity-90">جارٍ تحليل القضية... ستظهر التوصيات بعد اكتمال المعالجة.</p>
+        </div>
+        @endif
     </div>
 </div>
 
+{{-- Model Config Drawer --}}
+@include('components.agent-model-config', ['case' => $case])
+
+{{-- No auto-reload - SSE provides real-time updates without page refresh --}}
 @push('scripts')
 <script>
-(function() {
-    var caseId = @json($case->id);
-    var status = @json($case->status->value ?? $case->status);
-    var processing = ['phase1_processing', 'phase1_pending', 'phase2_processing', 'phase2_pending'].indexOf(status) !== -1;
-    if (!processing) return;
-    var url = @json(route('cases.stream', $case));
-    var es = new EventSource(url);
-    var typewriterSpeed = 80;
-    es.onmessage = function(ev) {
+// Inject Puter token into retry/resume form submits
+document.querySelectorAll('form.puter-form').forEach(function(form) {
+    form.addEventListener('submit', function() {
         try {
-            var d = JSON.parse(ev.data);
-            if (d.event_type === 'agent.started') {
-                console.log('Agent started', d.agent_number);
-            } else if (d.event_type === 'agent.output' && d.content) {
-                console.log('Output', d.agent_number, d.content);
-            } else if (d.event_type === 'agent.completed') {
-                console.log('Agent completed', d.agent_number);
-            } else if (d.event_type === 'agent.failed') {
-                console.log('Agent failed', d.agent_number);
+            if (typeof puter !== 'undefined' && puter.authToken) {
+                form.querySelector('.puter-token-input').value = puter.authToken;
             }
-        } catch (e) { console.warn(e); }
-    };
-    es.onerror = function() { es.close(); };
-})();
+        } catch(e) {}
+    });
+});
 </script>
 @endpush
 @endsection
