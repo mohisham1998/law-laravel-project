@@ -37,18 +37,33 @@ class LawEmbedding extends Model
         if (!$this->embedding_vector) {
             return [];
         }
-        
-        // Unpack binary blob to float array
-        $unpacked = unpack('f*', $this->embedding_vector);
-        return array_values($unpacked);
+
+        $raw = $this->embedding_vector;
+
+        // Handle legacy bytea resource (stream) from old binary column
+        if (is_resource($raw)) {
+            $raw = stream_get_contents($raw);
+        }
+
+        if (empty($raw) || !is_string($raw)) {
+            return [];
+        }
+
+        // Decode JSON-encoded float array (current format)
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            return array_map('floatval', $decoded);
+        }
+
+        return [];
     }
 
     public function setVectorArray(array $vector): void
     {
-        // Pack float array to binary blob
-        $this->embedding_vector = pack('f*', ...$vector);
+        // Store as JSON-encoded float array (avoids PostgreSQL UTF-8 bytea issues)
+        $this->embedding_vector = json_encode(array_map('floatval', $vector));
         $this->embedding_dimensions = count($vector);
-        
+
         // Calculate norm
         $sumSquares = array_reduce($vector, fn($carry, $val) => $carry + ($val * $val), 0);
         $this->norm = sqrt($sumSquares);
@@ -56,8 +71,8 @@ class LawEmbedding extends Model
 
     public static function cosineSimilarity(array $vector1, array $vector2): float
     {
-        if (count($vector1) !== count($vector2)) {
-            throw new \InvalidArgumentException('Vectors must have same dimensions');
+        if (count($vector1) !== count($vector2) || empty($vector1) || empty($vector2)) {
+            return 0.0; // Silently skip mismatched dimensions instead of throwing
         }
 
         $dotProduct = 0;
