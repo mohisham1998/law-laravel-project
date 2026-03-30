@@ -17,6 +17,7 @@ class CaseOutput extends Model
         'content',
         'content_json',
         'file_size',
+        'output_type',
     ];
 
     /** @var array<string, string> */

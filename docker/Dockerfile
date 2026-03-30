@@ -6,6 +6,8 @@ FROM php:8.4-fpm-alpine AS base
 # Install system dependencies (including GD for mpdf)
 RUN apk add --no-cache \
     nginx \
+    nodejs \
+    npm \
     postgresql-dev \
     libzip-dev \
     icu-dev \
@@ -37,6 +39,9 @@ COPY --chown=www-data:www-data . .
 # Install Composer dependencies (production only)
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Build frontend (Tailwind/Vite need vendor and app for content paths)
+RUN npm ci && npm run build && apk del nodejs npm
 
 # Final stage
 FROM base AS production

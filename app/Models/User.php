@@ -23,6 +23,10 @@ class User extends Authenticatable
         'confidence_threshold',
         'total_tokens_consumed',
         'total_cost_usd',
+        'llm_provider',
+        'puter_model',
+        'puter_disclosure_acknowledged',
+        'notifications_enabled',
     ];
 
     /**
@@ -48,6 +52,8 @@ class User extends Authenticatable
             'confidence_threshold' => 'decimal:2',
             'total_tokens_consumed' => 'integer',
             'total_cost_usd' => 'decimal:4',
+            'puter_disclosure_acknowledged' => 'boolean',
+            'notifications_enabled' => 'boolean',
         ];
     }
 

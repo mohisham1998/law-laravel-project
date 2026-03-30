@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProcessLawFileJob;
+use App\Models\LawFile;
 use App\Models\LawRegistry;
 use App\Services\RAG\LawProcessingService;
 use Illuminate\Http\Request;
@@ -58,6 +59,7 @@ class LawLibraryController extends Controller
             $path = $file->store("law_library/{$law->id}", 'local');
 
             $lawFile = $law->files()->create([
+                'uploaded_by_user_id' => auth()->id(),
                 'filename' => $filename,
                 'file_path' => $path,
                 'file_size' => $file->getSize(),
@@ -135,6 +137,7 @@ class LawLibraryController extends Controller
             $path = $file->store("law_library/{$lawRegistry->id}", 'local');
 
             $lawFile = $lawRegistry->files()->create([
+                'uploaded_by_user_id' => auth()->id(),
                 'filename' => $filename,
                 'file_path' => $path,
                 'file_size' => $file->getSize(),
@@ -154,5 +157,20 @@ class LawLibraryController extends Controller
         $result = $this->processingService->processLawRegistry($lawRegistry);
 
         return back()->with('success', $result['message']);
+    }
+
+    /**
+     * Re-queue a single law file for processing (e.g. when stuck "قيد المعالجة" or after a failure).
+     */
+    public function reprocessFile(LawRegistry $lawRegistry, LawFile $lawFile)
+    {
+        if ($lawFile->law_registry_id !== $lawRegistry->id) {
+            abort(404);
+        }
+
+        $lawFile->update(['processing_error' => null]);
+        ProcessLawFileJob::dispatch($lawFile);
+
+        return back()->with('success', 'تم إعادة إدراج الملف في طابور المعالجة: ' . $lawFile->filename);
     }
 }

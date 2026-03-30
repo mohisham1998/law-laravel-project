@@ -36,11 +36,14 @@ class VectorSearchService
         }
 
         $results = [];
+        $failedCount = 0;
 
         foreach ($embeddings as $embedding) {
             $articleVector = $embedding->getVectorArray();
             
             if (empty($articleVector)) {
+                // Skip embeddings that failed to load (corrupted/empty)
+                $failedCount++;
                 continue;
             }
 
@@ -55,11 +58,20 @@ class VectorSearchService
                     ];
                 }
             } catch (\Exception $e) {
+                $failedCount++;
                 Log::error('Similarity calculation failed', [
                     'article_id' => $embedding->law_article_id,
                     'error' => $e->getMessage(),
                 ]);
             }
+        }
+        
+        // Log warning if many embeddings failed
+        if ($failedCount > 0) {
+            Log::warning("Vector search: {$failedCount} embeddings failed to process", [
+                'query' => $query,
+                'total_embeddings' => $embeddings->count(),
+            ]);
         }
 
         // Sort by similarity (highest first)

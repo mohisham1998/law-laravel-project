@@ -8,7 +8,9 @@ use App\Jobs\ProcessPhase2Job;
 use App\Models\CaseDocument;
 use App\Models\ErrorLog;
 use App\Models\LegalCase;
+use App\Services\CaseEventService;
 use App\Services\PdfExportService;
+use App\Services\UserNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -55,6 +57,7 @@ class CaseController extends Controller
         
         $count = $cases->count();
         foreach ($cases as $case) {
+            $oldStatus = $case->status->value ?? $case->status;
             $haltedAt = $case->halted_at_agent ?? $case->current_agent ?? 1;
             $resumeFrom = max(1, (int) $haltedAt);
 
@@ -63,8 +66,17 @@ class CaseController extends Controller
                 'status' => CaseStatus::Phase2Processing,
             ]);
 
+            $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Processing->value);
+
             ProcessPhase2Job::dispatch($case, $case->getPuterToken())->onQueue('phase2');
         }
+
+        app(UserNotificationService::class)->emitBulkActionSummary(
+            auth()->id(),
+            'resume',
+            $count,
+            route('cases.index')
+        );
 
         return redirect()->route('cases.index')->with('success', "تم استئناف معالجة {$count} قضية بنجاح.");
     }
@@ -91,10 +103,20 @@ class CaseController extends Controller
         
         $count = $cases->count();
         foreach ($cases as $case) {
+            $oldStatus = $case->status->value ?? $case->status;
             $case->update([
                 'status' => CaseStatus::Paused,
             ]);
+
+            $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Paused->value);
         }
+
+        app(UserNotificationService::class)->emitBulkActionSummary(
+            auth()->id(),
+            'pause',
+            $count,
+            route('cases.index')
+        );
         
         return redirect()->route('cases.index')->with('success', "تم إيقاف {$count} قضية مؤقتاً.");
     }
@@ -121,6 +143,7 @@ class CaseController extends Controller
         
         $count = $cases->count();
         foreach ($cases as $case) {
+            $oldStatus = $case->status->value ?? $case->status;
             $case->update([
                 'resume_from_agent' => 1,
                 'status' => CaseStatus::Phase2Processing,
@@ -128,8 +151,17 @@ class CaseController extends Controller
                 'last_error_message' => null,
             ]);
 
+            $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Processing->value);
+
             ProcessPhase2Job::dispatch($case, $case->getPuterToken())->onQueue('phase2');
         }
+
+        app(UserNotificationService::class)->emitBulkActionSummary(
+            auth()->id(),
+            'retry',
+            $count,
+            route('cases.index')
+        );
 
         return redirect()->route('cases.index')->with('success', "تم إعادة معالجة {$count} قضية بنجاح.");
     }
@@ -349,6 +381,7 @@ class CaseController extends Controller
         
         $case->clearFailure();
         $case = $case->fresh();
+        $oldStatus = $status;
         $user = auth()->user();
         $provider = $user->llm_provider ?? 'openrouter';
         $modelUsed = $provider === 'puter'
@@ -368,6 +401,7 @@ class CaseController extends Controller
                 'status' => CaseStatus::Phase2Pending,
                 'phase' => 2,
             ]);
+            $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Pending->value);
             ProcessPhase2Job::dispatch($case, $case->getPuterToken());
         } else {
             $case->update([
@@ -375,6 +409,7 @@ class CaseController extends Controller
                 'status' => CaseStatus::Phase1Pending,
                 'phase' => 1,
             ]);
+            $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase1Pending->value);
             ProcessPhase1Job::dispatch($case, $case->getPuterToken());
         }
 
@@ -414,6 +449,7 @@ class CaseController extends Controller
         }
 
         $case->refresh();
+        $this->emitCaseStatusChange($case, CaseStatus::AwaitingLaws->value, CaseStatus::Phase2Pending->value);
 
         // Refresh stored token if browser sends a fresh one
         $freshToken = $request->header('X-Puter-Token', '') ?: $request->input('puter_token', '');
@@ -445,11 +481,14 @@ class CaseController extends Controller
             $case->update(['puter_token' => $freshToken]);
         }
 
+        $oldStatus = $case->status->value ?? $case->status;
         $case->update([
             'resume_from_agent' => $agentNumber,
             'status' => CaseStatus::Phase2Processing,
             'phase' => 2,
         ]);
+
+        $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Processing->value);
 
         ProcessPhase2Job::dispatch($case->fresh(), $case->getPuterToken());
 
@@ -527,6 +566,7 @@ class CaseController extends Controller
         }
 
         $puterToken = $case->getPuterToken();
+        $oldStatus = $case->status->value ?? $case->status;
 
         if ($agentNumber >= 1 && $agentNumber <= 9) {
             $case->update([
@@ -534,10 +574,12 @@ class CaseController extends Controller
                 'status' => CaseStatus::Phase2Processing,
                 'phase' => 2,
             ]);
+            $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Processing->value);
             ProcessPhase2Job::dispatch($case, $puterToken);
         } elseif ($agentNumber === 0) {
             // Phase 1 re-run
             $case->update(['status' => CaseStatus::Phase1Pending, 'phase' => 1]);
+            $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase1Pending->value);
             ProcessPhase1Job::dispatch($case, $puterToken);
         } else {
             // Phase 3 agents (10-12)
@@ -545,6 +587,7 @@ class CaseController extends Controller
                 'status' => CaseStatus::Phase3Processing,
                 'phase' => 3,
             ]);
+            $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase3Processing->value);
             \App\Jobs\ProcessPhase3Job::dispatch($case, $puterToken);
         }
 
@@ -582,12 +625,15 @@ class CaseController extends Controller
             ? ($user->puter_model ?? 'gpt-5-nano')
             : ($user->selected_model ?? $case->model_used ?? config('openrouter.default_model'));
 
+        $oldStatus = $case->status->value ?? $case->status;
         $case->update([
             'resume_from_agent' => $resumeFrom,
             'status' => CaseStatus::Phase2Processing,
             'phase' => 2,
             'model_used' => $effectiveModel,
         ]);
+
+        $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Processing->value);
 
         // Refresh stored token if browser sends a fresh one
         $freshToken = $request->header('X-Puter-Token', '') ?: $request->input('puter_token', '');
@@ -632,10 +678,13 @@ class CaseController extends Controller
             return redirect()->route('cases.show', $case)->with('error', 'لم يتم إنشاء المذكرة النهائية بعد.');
         }
 
+        $oldStatus = $case->status->value ?? $case->status;
         $case->update([
             'status' => CaseStatus::Phase3Pending,
             'phase' => 3,
         ]);
+
+        $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase3Pending->value);
 
         // Refresh stored token if browser sends a fresh one
         $freshToken = $request->header('X-Puter-Token', '') ?: $request->input('puter_token', '');
@@ -681,11 +730,14 @@ class CaseController extends Controller
         }
 
         // Set to paused (not cancelled) so user can retry later
+        $oldStatus = $case->status->value ?? $case->status;
         $case->update([
             'status' => CaseStatus::Paused,
             'last_failed_phase' => $lastFailedPhase,
             'last_error_message' => 'تم إيقاف المعالجة من قبل المستخدم',
         ]);
+
+        $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Paused->value);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -724,9 +776,12 @@ class CaseController extends Controller
             return redirect()->back()->with('error', 'لا يمكن إيقاف القضية في حالتها الحالية.');
         }
 
+        $oldStatus = $case->status->value ?? $case->status;
         $case->update([
             'status' => CaseStatus::Paused,
         ]);
+
+        $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Paused->value);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -971,5 +1026,10 @@ class CaseController extends Controller
         $case->delete();
 
         return redirect()->route('cases.index')->with('success', 'تم حذف القضية بنجاح.');
+    }
+
+    private function emitCaseStatusChange(LegalCase $case, string $oldStatus, string $newStatus): void
+    {
+        app(CaseEventService::class)->emitStatusChanged($case->id, $oldStatus, $newStatus);
     }
 }

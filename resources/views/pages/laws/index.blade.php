@@ -132,17 +132,20 @@
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-2">التصنيف</label>
-                <select name="category" class="w-full px-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary" style="background-position: left 0.75rem center;">
-                    <option value="">اختر التصنيف</option>
-                    <option value="civil">مدني</option>
-                    <option value="criminal">جزائي</option>
-                    <option value="commercial">تجاري</option>
-                    <option value="labor">عمالي</option>
-                    <option value="family">أحوال شخصية</option>
-                    <option value="administrative">إداري</option>
-                    <option value="evidence">إثبات</option>
-                    <option value="procedures">إجراءات</option>
-                </select>
+                <div class="relative">
+                    <select name="category" class="w-full pr-10 pl-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary appearance-none">
+                        <option value="">اختر التصنيف</option>
+                        <option value="civil">مدني</option>
+                        <option value="criminal">جزائي</option>
+                        <option value="commercial">تجاري</option>
+                        <option value="labor">عمالي</option>
+                        <option value="family">أحوال شخصية</option>
+                        <option value="administrative">إداري</option>
+                        <option value="evidence">إثبات</option>
+                        <option value="procedures">إجراءات</option>
+                    </select>
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                </div>
             </div>
 
             <div>
@@ -216,17 +219,20 @@
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-2">التصنيف</label>
-                <select id="editCategory" name="category" class="w-full px-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary" style="background-position: left 0.75rem center;">
-                    <option value="">اختر التصنيف</option>
-                    <option value="civil">مدني</option>
-                    <option value="criminal">جزائي</option>
-                    <option value="commercial">تجاري</option>
-                    <option value="labor">عمالي</option>
-                    <option value="family">أحوال شخصية</option>
-                    <option value="administrative">إداري</option>
-                    <option value="evidence">إثبات</option>
-                    <option value="procedures">إجراءات</option>
-                </select>
+                <div class="relative">
+                    <select id="editCategory" name="category" class="w-full pr-10 pl-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary appearance-none">
+                        <option value="">اختر التصنيف</option>
+                        <option value="civil">مدني</option>
+                        <option value="criminal">جزائي</option>
+                        <option value="commercial">تجاري</option>
+                        <option value="labor">عمالي</option>
+                        <option value="family">أحوال شخصية</option>
+                        <option value="administrative">إداري</option>
+                        <option value="evidence">إثبات</option>
+                        <option value="procedures">إجراءات</option>
+                    </select>
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                </div>
             </div>
 
             <div class="flex gap-3 pt-4">

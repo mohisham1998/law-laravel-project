@@ -15,7 +15,11 @@
             <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                 <span class="material-symbols-outlined">folder_open</span>
             </div>
-            <span class="text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded-full">+١٢%</span>
+            @if($activeTrend !== null)
+                <span class="text-{{ $activeTrend >= 0 ? 'green' : 'red' }}-600 text-xs font-bold bg-{{ $activeTrend >= 0 ? 'green' : 'red' }}-50 px-2 py-1 rounded-full">{{ $activeTrend >= 0 ? '+' : '' }}{{ $activeTrend }}%</span>
+            @else
+                <span class="text-slate-400 text-xs bg-slate-100 px-2 py-1 rounded-full">--</span>
+            @endif
         </div>
         <p class="text-slate-500 text-sm mb-1">عدد القضايا النشطة</p>
         <h3 class="text-3xl font-black text-slate-900">{{ $stats['active_cases'] }}</h3>
@@ -61,28 +65,22 @@
     <div class="lg:col-span-2 notion-card p-6 rounded-2xl">
         <div class="flex items-center justify-between mb-6">
             <h4 class="font-bold text-slate-900">عدد القضايا شهرياً</h4>
-            <select class="bg-slate-50 border-none text-xs rounded-lg focus:ring-primary/20">
-                <option>آخر ٦ أشهر</option>
-                <option>السنة الحالية</option>
-            </select>
+            <div class="relative">
+                <select class="w-full pr-8 pl-3 py-2 bg-slate-50 border-none text-xs rounded-lg focus:ring-primary/20 appearance-none">
+                    <option>آخر ٦ أشهر</option>
+                    <option>السنة الحالية</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-sm">expand_more</span>
+            </div>
         </div>
         <div class="h-64 flex items-end gap-4 px-2">
-            @php
-                $months = [
-                    ['name' => 'يناير', 'value' => 45, 'height' => 40],
-                    ['name' => 'فبراير', 'value' => 72, 'height' => 65],
-                    ['name' => 'مارس', 'value' => 98, 'height' => 85],
-                    ['name' => 'أبريل', 'value' => 60, 'height' => 55],
-                    ['name' => 'مايو', 'value' => 110, 'height' => 95],
-                    ['name' => 'يونيو', 'value' => 38, 'height' => 35],
-                ];
-            @endphp
-            @foreach($months as $index => $month)
+            @php $lastIdx = count($monthlyData) - 1; @endphp
+            @foreach($monthlyData as $index => $month)
                 <div class="flex-1 flex flex-col items-center gap-2 group">
-                    <div class="w-full {{ $index == 4 ? 'bg-primary/20' : 'bg-primary/10' }} rounded-t-lg group-hover:bg-primary transition-colors relative" style="height: {{ $month['height'] }}%">
+                    <div class="w-full {{ $index == $lastIdx ? 'bg-primary/20' : 'bg-primary/10' }} rounded-t-lg group-hover:bg-primary transition-colors relative" style="height: {{ $month['height'] }}%">
                         <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">{{ $month['value'] }}</span>
                     </div>
-                    <span class="text-xs text-slate-500 {{ $index == 4 ? 'font-bold' : '' }}">{{ $month['name'] }}</span>
+                    <span class="text-xs text-slate-500 {{ $index == $lastIdx ? 'font-bold' : '' }}">{{ $month['name'] }}</span>
                 </div>
             @endforeach
         </div>
@@ -107,14 +105,14 @@
                     <span class="w-3 h-3 rounded-full bg-primary"></span>
                     <span class="text-slate-600">قضايا منتهية</span>
                 </div>
-                <span class="font-bold">٨٥%</span>
+                <span class="font-bold">{{ $stats['completion_rate'] }}%</span>
             </div>
             <div class="flex items-center justify-between text-xs">
                 <div class="flex items-center gap-2">
                     <span class="w-3 h-3 rounded-full bg-slate-200"></span>
                     <span class="text-slate-600">قضايا معلقة</span>
                 </div>
-                <span class="font-bold">١٥%</span>
+                <span class="font-bold">{{ $stats['pending_rate'] }}%</span>
             </div>
         </div>
     </div>
@@ -134,62 +132,41 @@
     </div>
     
     <div class="space-y-6">
-        {{-- Agent 1 --}}
+        @forelse($agentProgress as $index => $agent)
+        @php
+            $colors = ['primary', 'blue-600', 'purple-600'];
+            $icons = ['spellcheck', 'auto_awesome', 'edit_note'];
+            $statusText = match($agent['status']) {
+                'completed' => 'مكتمل',
+                'failed' => 'فشل',
+                'processing' => 'جاري المعالجة',
+                default => 'في الانتظار',
+            };
+            $color = $colors[$index] ?? 'primary';
+            $icon = $icons[$index] ?? 'psychology';
+        @endphp
         <div class="relative">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-primary">
-                        <span class="material-symbols-outlined text-base">spellcheck</span>
+                    <div class="w-8 h-8 rounded-lg bg-{{ $color }}/10 flex items-center justify-center text-{{ $color }}">
+                        <span class="material-symbols-outlined text-base">{{ $icon }}</span>
                     </div>
                     <div>
-                        <p class="text-sm font-bold text-slate-900">تحليل النصوص والاستشهادات</p>
-                        <p class="text-[11px] text-slate-500">جاري مطابقة القوانين مع الوقائع</p>
+                        <p class="text-sm font-bold text-slate-900">{{ $agent['name'] }}</p>
+                        <p class="text-[11px] text-slate-500">{{ $statusText }}</p>
                     </div>
                 </div>
-                <span class="text-xs font-bold text-primary">٩٢%</span>
+                <span class="text-xs font-bold text-{{ $color }}">{{ $agent['progress'] }}%</span>
             </div>
             <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div class="bg-primary h-full w-[92%] transition-all"></div>
+                <div class="bg-{{ $color }} h-full transition-all" style="width: {{ $agent['progress'] }}%"></div>
             </div>
         </div>
-        
-        {{-- Agent 2 --}}
-        <div class="relative">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                        <span class="material-symbols-outlined text-base">auto_awesome</span>
-                    </div>
-                    <div>
-                        <p class="text-sm font-bold text-slate-900">استنتاج الثغرات القانونية</p>
-                        <p class="text-[11px] text-slate-500">فحص السوابق القضائية المماثلة</p>
-                    </div>
-                </div>
-                <span class="text-xs font-bold text-blue-600">٤٥%</span>
-            </div>
-            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div class="bg-blue-600 h-full w-[45%] transition-all"></div>
-            </div>
+        @empty
+        <div class="text-center py-4 text-slate-500">
+            <p>لا توجد عمليات قيد المعالجة حالياً</p>
         </div>
-        
-        {{-- Agent 3 --}}
-        <div class="relative">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600">
-                        <span class="material-symbols-outlined text-base">edit_note</span>
-                    </div>
-                    <div>
-                        <p class="text-sm font-bold text-slate-900">صياغة المذكرة المبدئية</p>
-                        <p class="text-[11px] text-slate-500">بانتظار اكتمال التحليل النصي</p>
-                    </div>
-                </div>
-                <span class="text-xs font-bold text-slate-400">١٢%</span>
-            </div>
-            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div class="bg-purple-600 h-full w-[12%] transition-all"></div>
-            </div>
-        </div>
+        @endforelse
     </div>
 </div>
 @endsection

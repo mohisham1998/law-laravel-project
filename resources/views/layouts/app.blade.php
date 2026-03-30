@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @stack('styles')
     <script>
         tailwind.config = {
@@ -39,6 +40,12 @@
             font-family: 'Cairo', sans-serif;
             background-color: #f5f8f7;
         }
+        /* RTL: dropdown arrow on the left (start) side only – no native right-side arrow */
+        select.appearance-none {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
         .notion-card {
             background: white;
             border: 1px solid rgba(0, 107, 52, 0.1);
@@ -53,9 +60,9 @@
     </style>
 </head>
 <body class="bg-background-light text-slate-900 font-display">
-    <div class="flex h-screen overflow-hidden">
-        {{-- Sidebar --}}
-        <aside class="w-72 bg-white border-l border-primary/10 flex flex-col h-full">
+    <div>
+        {{-- Sidebar: fixed full-height on the right (RTL start side) --}}
+        <aside class="fixed top-0 right-0 w-72 h-screen bg-white border-l border-primary/10 flex flex-col overflow-y-auto z-30">
             <div class="p-6 flex items-center gap-3">
                 <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
                     <span class="material-symbols-outlined">gavel</span>
@@ -97,28 +104,174 @@
                 <div class="mt-4 p-4 bg-primary/5 rounded-xl">
                     <p class="text-xs text-slate-500 mb-2">مساحة التخزين</p>
                     <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                        <div class="bg-primary h-full w-[65%]"></div>
+                        <div class="bg-primary h-full" style="width: {{ $sidebarStoragePercent ?? 0 }}%"></div>
                     </div>
-                    <p class="text-[10px] text-primary mt-2 font-bold">تم استخدام ٦.٥ جيجابايت من ١٠</p>
+                    <p class="text-[10px] text-primary mt-2 font-bold">تم استخدام {{ $sidebarStorageGB ?? 0 }} جيجابايت من {{ $sidebarStorageCapacityGB ?? 10 }}</p>
                 </div>
+                <p class="text-[9px] text-slate-400 mt-2 text-center" id="ui-version">UI v2.0.0</p>
             </div>
         </aside>
         
-        {{-- Main Content --}}
-        <main class="flex-1 flex flex-col overflow-y-auto">
+        {{-- Main Content: right margin to account for fixed sidebar --}}
+        <main class="flex flex-col min-h-screen" style="margin-right: 18rem; max-width: calc(100vw - 18rem); overflow-x: hidden;">
             {{-- Header: extra padding/margins to avoid truncation --}}
-            <header class="h-20 bg-white/80 backdrop-blur-md border-b border-primary/5 px-6 sm:px-10 lg:px-12 flex items-center justify-between gap-6 sticky top-0 z-10 shrink-0">
-                <div class="flex-1 min-w-0 max-w-md">
+            <header class="h-20 bg-white border-b border-primary/5 px-6 sm:px-10 lg:px-12 flex items-center justify-between gap-6 shrink-0">
+                <div class="flex-1 min-w-0 max-w-md relative" x-data="globalSearch()" @click.outside="close()">
                     <div class="relative group">
                         <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
-                        <input class="w-full bg-slate-100 border-none rounded-xl pr-10 pl-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all" placeholder="ابحث عن قضايا، مستندات، أو قوانين..." type="text"/>
+                        <input
+                            id="global-search-input"
+                            x-model="query"
+                            @input.debounce.300ms="search()"
+                            @focus="open = true"
+                            @keydown.escape="close()"
+                            @keydown.arrow-down.prevent="navigate(1)"
+                            @keydown.arrow-up.prevent="navigate(-1)"
+                            @keydown.enter.prevent="selectHighlighted()"
+                            class="w-full bg-slate-100 border-none rounded-xl pr-10 pl-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all"
+                            placeholder="ابحث عن قضايا، مستندات، أو قوانين..."
+                            type="text"
+                            autocomplete="off"
+                        />
+                        <span x-show="loading" class="absolute left-3 top-1/2 -translate-y-1/2">
+                            <span class="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin inline-block"></span>
+                        </span>
+                    </div>
+
+                    {{-- Search Results Dropdown --}}
+                    <div
+                        x-show="open && (results.length > 0 || (query.length >= 2 && !loading))"
+                        x-transition:enter="transition ease-out duration-150"
+                        x-transition:enter-start="opacity-0 -translate-y-1"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        x-transition:leave="transition ease-in duration-100"
+                        x-transition:leave-start="opacity-100"
+                        x-transition:leave-end="opacity-0"
+                        class="absolute top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden max-h-96 overflow-y-auto"
+                    >
+                        <template x-if="results.length === 0 && query.length >= 2 && !loading">
+                            <div class="px-4 py-8 text-center text-slate-500 text-sm">
+                                <span class="material-symbols-outlined text-3xl text-slate-300 block mb-2">search_off</span>
+                                لا توجد نتائج لـ "<span x-text="query"></span>"
+                            </div>
+                        </template>
+
+                        <template x-for="(result, idx) in results" :key="result.type + result.id">
+                            <a
+                                :href="result.url"
+                                class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 cursor-pointer"
+                                :class="idx === highlighted ? 'bg-primary/5' : ''"
+                                @mouseenter="highlighted = idx"
+                            >
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                     :class="{
+                                         'bg-primary/10 text-primary': result.type === 'case',
+                                         'bg-blue-50 text-blue-600': result.type === 'document',
+                                         'bg-emerald-50 text-emerald-600': result.type === 'law',
+                                     }">
+                                    <span class="material-symbols-outlined text-base" x-text="result.icon"></span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-slate-900 truncate" x-text="result.title"></p>
+                                    <p class="text-xs text-slate-500 truncate" x-text="result.subtitle"></p>
+                                </div>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                                      :class="{
+                                          'bg-primary/10 text-primary': result.type === 'case',
+                                          'bg-blue-50 text-blue-600': result.type === 'document',
+                                          'bg-emerald-50 text-emerald-600': result.type === 'law',
+                                      }"
+                                      x-text="result.type_label">
+                                </span>
+                            </a>
+                        </template>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 sm:gap-4 shrink-0">
-                    <button class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 relative magnetic-element shrink-0">
-                        <span class="material-symbols-outlined">notifications</span>
-                        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                    </button>
+                    <div x-data="notificationCenter()" x-init="init()" class="relative shrink-0" @click.outside="panelOpen = false">
+                        <button
+                            @click="panelOpen = !panelOpen; if(panelOpen) markRead()"
+                            class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 relative magnetic-element hover:bg-slate-200 transition-colors"
+                            :class="enabled ? (panelOpen ? 'bg-slate-200' : '') : 'opacity-60 cursor-not-allowed'"
+                            :disabled="!enabled"
+                        >
+                            <span class="material-symbols-outlined" :class="unreadCount > 0 ? 'fill-1' : ''">notifications</span>
+                            <span
+                                x-show="unreadCount > 0"
+                                x-transition
+                                class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 rounded-full border-2 border-white text-white text-[9px] font-bold flex items-center justify-center px-1"
+                                x-text="unreadCount > 9 ? '9+' : unreadCount"
+                            ></span>
+                        </button>
+
+                        {{-- Notification Panel --}}
+                        <div
+                            x-show="panelOpen"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 scale-95 translate-y-1"
+                            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100"
+                            x-transition:leave-end="opacity-0"
+                            class="absolute top-12 left-0 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden"
+                            @click.outside="panelOpen = false"
+                        >
+                            <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+                                <h4 class="font-bold text-sm text-slate-900">الإشعارات</h4>
+                                <button @click="clearAll()" x-show="notifications.length > 0" class="text-xs text-slate-400 hover:text-slate-600 transition-colors">مسح الكل</button>
+                            </div>
+
+                            <div class="max-h-80 overflow-y-auto">
+                                <template x-if="notifications.length === 0">
+                                    <div class="px-4 py-10 text-center text-slate-400">
+                                        <span class="material-symbols-outlined text-3xl block mb-2 text-slate-300">notifications_off</span>
+                                        <p class="text-sm" x-text="enabled ? 'لا توجد إشعارات' : 'الإشعارات معطلة من الإعدادات'"></p>
+                                    </div>
+                                </template>
+
+                                <template x-for="(n, idx) in notifications" :key="idx">
+                                    <a
+                                        :href="n.url"
+                                        class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 cursor-pointer"
+                                        :class="!n.read ? 'bg-primary/3' : ''"
+                                    >
+                                        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                                             :class="{
+                                                 'bg-emerald-100 text-emerald-600': n.type === 'agent.completed',
+                                                 'bg-red-100 text-red-600': ['agent.failed','pipeline.halted','pipeline.paused'].includes(n.type),
+                                                 'bg-blue-100 text-blue-600': n.type === 'agent.started',
+                                                 'bg-amber-100 text-amber-700': ['pipeline.timeout_warning','agent.low_confidence'].includes(n.type),
+                                                 'bg-indigo-100 text-indigo-600': ['rag.processing.parsed','rag.processing.completed','bulk.action.completed'].includes(n.type),
+                                                 'bg-primary/10 text-primary': n.type === 'case.status_changed',
+                                             }">
+                                            <span class="material-symbols-outlined text-base"
+                                                  :class="{
+                                                      'fill-1': !n.read
+                                                  }"
+                                                  x-text="n.icon">
+                                            </span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-semibold text-slate-900 leading-tight truncate" x-text="n.title"></p>
+                                            <p class="text-[11px] text-slate-500 mt-0.5 line-clamp-2" x-text="n.body"></p>
+                                            <p class="text-[10px] text-slate-400 mt-1" x-text="n.time"></p>
+                                        </div>
+                                        <span x-show="!n.read" class="w-2 h-2 bg-primary rounded-full mt-2 shrink-0"></span>
+                                    </a>
+                                </template>
+                            </div>
+
+                            <div class="px-4 py-2.5 border-t border-slate-100 bg-slate-50">
+                                <div class="flex items-center gap-2 text-[11px]"
+                                     :class="sseConnected ? 'text-emerald-600' : 'text-slate-400'">
+                                    <span class="w-2 h-2 rounded-full inline-block"
+                                          :class="sseConnected ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'">
+                                    </span>
+                                    <span x-text="sseConnected ? 'متصل - يتم المراقبة الآن' : 'غير متصل'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="h-8 w-[1px] bg-slate-200 shrink-0 hidden sm:block"></div>
                     <div class="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
                         <div class="text-left min-w-0 hidden sm:block">
@@ -139,7 +292,7 @@
             </header>
             
             {{-- Page Content --}}
-            <div class="p-8 flex-1">
+            <div class="p-6 sm:p-8 flex-1 overflow-visible min-w-0">
                 @yield('content')
             </div>
             
@@ -177,13 +330,13 @@
         }
         window.showToast = showToast;
         @if (session('success'))
-        document.addEventListener('DOMContentLoaded', function() { showToast({{ json_encode(session('success')) }}, 'success'); });
+        document.addEventListener('DOMContentLoaded', function() { showToast({!! \Illuminate\Support\Js::from(session('success')) !!}, 'success'); });
         @endif
         @if (session('error'))
-        document.addEventListener('DOMContentLoaded', function() { showToast({{ json_encode(session('error')) }}, 'error'); });
+        document.addEventListener('DOMContentLoaded', function() { showToast({!! \Illuminate\Support\Js::from(session('error')) !!}, 'error'); });
         @endif
         @if ($errors->any())
-        document.addEventListener('DOMContentLoaded', function() { showToast({{ json_encode($errors->first()) }}, 'error'); });
+        document.addEventListener('DOMContentLoaded', function() { showToast({!! \Illuminate\Support\Js::from($errors->first()) !!}, 'error'); });
         @endif
     })();
     </script>
@@ -198,8 +351,297 @@
     }
     .animate-toast-in { animation: toast-in 0.3s ease-out forwards; }
     .animate-toast-out { animation: toast-out 0.3s ease-in forwards; }
+    [x-cloak] { display: none !important; }
     </style>
     
+    @auth
+    {{-- OpenRouter balance check: always defined so settings page can call it regardless of stored provider --}}
+    <script>
+    (function() {
+        var SESSION_KEY = 'or_balance_checked';
+        var BALANCE_KEY = 'or_balance_data';
+
+        function applyBalanceToWidget(data) {
+            // Update the balance widget in settings page if it's mounted
+            var widget = document.getElementById('orBalanceWidget');
+            if (!widget) return;
+            var remaining = data.remaining != null ? parseFloat(data.remaining) : null;
+            var isDepleted = data.is_depleted;
+            var isLow = data.is_low;
+            var remainingSAR = data.remaining_sar != null ? parseFloat(data.remaining_sar).toFixed(2) : '—';
+            var remainingUSD = remaining != null ? Math.max(0, remaining).toFixed(2) : '—';
+            var totalSAR = data.total_credits_sar != null ? parseFloat(data.total_credits_sar).toFixed(2) : '—';
+            var usageSAR = data.usage_sar != null ? parseFloat(data.usage_sar).toFixed(2) : '—';
+
+            var color = isDepleted ? 'text-red-600' : (isLow ? 'text-amber-600' : 'text-emerald-600');
+            var bgColor = isDepleted ? 'bg-red-50 border-red-200' : (isLow ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200');
+            var icon = isDepleted ? 'money_off' : (isLow ? 'warning' : 'check_circle');
+
+            widget.className = 'mt-4 p-4 rounded-xl border text-sm ' + bgColor;
+            widget.innerHTML =
+                '<div class="flex items-center justify-between mb-2">' +
+                    '<span class="font-bold flex items-center gap-1.5 ' + color + '">' +
+                        '<span class="material-symbols-outlined text-base">' + icon + '</span>' +
+                        (isDepleted ? 'نفد الرصيد' : (isLow ? 'رصيد منخفض' : 'رصيد كافٍ')) +
+                    '</span>' +
+                    '<span class="text-xs text-slate-400">تحديث تلقائي كل 5 دقائق</span>' +
+                '</div>' +
+                '<div class="grid grid-cols-2 gap-2 text-xs mt-1">' +
+                    '<div class="bg-white/70 rounded-lg p-2 text-center">' +
+                        '<p class="text-slate-500 mb-0.5">الرصيد المتبقي</p>' +
+                        '<p class="font-bold text-base ' + color + '">' + remainingSAR + ' ر.س</p>' +
+                        '<p class="text-slate-400">(' + remainingUSD + ' USD)</p>' +
+                    '</div>' +
+                    '<div class="bg-white/70 rounded-lg p-2 text-center">' +
+                        '<p class="text-slate-500 mb-0.5">الاستخدام الإجمالي</p>' +
+                        '<p class="font-bold text-base text-slate-700">' + usageSAR + ' ر.س</p>' +
+                        '<p class="text-slate-400">من ' + totalSAR + ' ر.س</p>' +
+                    '</div>' +
+                '</div>' +
+                (isDepleted ? '<p class="mt-2 text-xs text-red-600 font-medium">أضف رصيداً من <a href="https://openrouter.ai/credits" target="_blank" class="underline">openrouter.ai/credits</a> لتشغيل القضايا.</p>' : '');
+        }
+
+        function checkBalance(force) {
+            // Use cached result in sessionStorage unless forced
+            if (!force) {
+                var cached = sessionStorage.getItem(BALANCE_KEY);
+                if (cached) {
+                    try {
+                        var d = JSON.parse(cached);
+                        applyBalanceToWidget(d);
+                        return;
+                    } catch(e) {}
+                }
+            }
+
+            fetch('{{ route('settings.openrouter-status') }}', {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.ok) return;
+                sessionStorage.setItem(BALANCE_KEY, JSON.stringify(data));
+                applyBalanceToWidget(data);
+
+                // Show toast once per browser session
+                if (!sessionStorage.getItem(SESSION_KEY)) {
+                    sessionStorage.setItem(SESSION_KEY, '1');
+                    if (data.is_depleted) {
+                        showToast('نفد رصيد OpenRouter — لن تتمكن من تشغيل قضايا جديدة.', 'error');
+                    } else if (data.is_low) {
+                        showToast('تحذير: رصيد OpenRouter منخفض (أقل من $1). يُنصح بإعادة الشحن.', 'error');
+                    }
+                }
+            })
+            .catch(function() {});
+        }
+
+        // Expose globally so settings page can trigger a forced refresh regardless of stored provider
+        window.refreshOpenRouterBalance = function() {
+            sessionStorage.removeItem(BALANCE_KEY);
+            sessionStorage.removeItem(SESSION_KEY);
+            checkBalance(true);
+        };
+    })();
+    </script>
+    @endauth
+
+    {{-- Global Search Alpine Component --}}
+    <script>
+    function globalSearch() {
+        return {
+            query: '',
+            results: [],
+            loading: false,
+            open: false,
+            highlighted: -1,
+            _timer: null,
+
+            async search() {
+                this.highlighted = -1;
+                if (this.query.length < 2) {
+                    this.results = [];
+                    this.open = false;
+                    return;
+                }
+                this.loading = true;
+                this.open = true;
+                try {
+                    const r = await fetch('/search?q=' + encodeURIComponent(this.query), {
+                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const d = await r.json();
+                    this.results = d.results ?? [];
+                } catch(e) {
+                    this.results = [];
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            close() {
+                this.open = false;
+                this.highlighted = -1;
+            },
+
+            navigate(dir) {
+                if (!this.open || this.results.length === 0) return;
+                this.highlighted = Math.max(0, Math.min(this.results.length - 1, this.highlighted + dir));
+            },
+
+            selectHighlighted() {
+                if (this.highlighted >= 0 && this.results[this.highlighted]) {
+                    window.location.href = this.results[this.highlighted].url;
+                }
+            },
+        };
+    }
+
+    // ── Notification Center ──────────────────────────────────────────────
+    function notificationCenter() {
+        return {
+            notifications: [],
+            panelOpen: false,
+            sseConnected: false,
+            enabled: @json((bool) (auth()->user()->notifications_enabled ?? true)),
+            _es: null,
+            _retryTimer: null,
+            MAX_NOTIFICATIONS: 30,
+
+            get unreadCount() {
+                return this.notifications.filter(n => !n.read).length;
+            },
+
+            _suppressToasts: true,
+
+            init() {
+                if (!this.enabled) {
+                    return;
+                }
+                this.connect();
+            },
+
+            connect() {
+                if (!this.enabled) return;
+                if (this._es) { this._es.close(); }
+                this._suppressToasts = true;
+                this._es = new EventSource('{{ route("notifications.stream") }}');
+                this._es.onopen = () => { this.sseConnected = true; };
+                this._es.onmessage = (e) => {
+                    try {
+                        const event = JSON.parse(e.data);
+                        this.handleEvent(event);
+                    } catch (_) {}
+                };
+                this._es.onerror = () => {
+                    this.sseConnected = false;
+                    this._es.close();
+                    this._retryTimer = setTimeout(() => this.connect(), 5000);
+                };
+            },
+
+            handleEvent(event) {
+                if (event.event_type === 'notifications.connected') {
+                    if (typeof event.notifications_enabled === 'boolean') {
+                        this.enabled = event.notifications_enabled;
+                    }
+                    this.sseConnected = true;
+                    // Allow 2s for historical events to flow in silently, then enable toasts
+                    setTimeout(() => { this._suppressToasts = false; }, 2000);
+                    return;
+                }
+                if (event.event_type !== 'notification') return;
+
+                const type = event.notification_type;
+                const agentName = event.agent_name;
+                const caseTitle = event.case_title || 'القضية';
+
+                let title = '';
+                let body = '';
+                let icon = 'notifications';
+
+                if (type === 'agent.completed') {
+                    title = 'اكتمل الوكيل: ' + (agentName || '#' + event.agent_number);
+                    body = 'في قضية: ' + caseTitle;
+                    icon = 'check_circle';
+                } else if (type === 'agent.started') {
+                    title = 'بدأ الوكيل: ' + (agentName || '#' + event.agent_number);
+                    body = 'في قضية: ' + caseTitle;
+                    icon = 'play_circle';
+                } else if (type === 'agent.failed') {
+                    title = 'فشل الوكيل: ' + (agentName || '#' + event.agent_number);
+                    body = (event.error || '') + ' | ' + caseTitle;
+                    icon = 'error';
+                } else if (type === 'agent.low_confidence') {
+                    title = 'انخفاض مستوى الثقة';
+                    body = caseTitle;
+                    icon = 'warning';
+                } else if (type === 'pipeline.timeout_warning') {
+                    title = 'تحذير قرب انتهاء المهلة';
+                    body = 'المتبقي: ' + (event.remaining_minutes ?? '?') + ' دقيقة | ' + caseTitle;
+                    icon = 'schedule';
+                } else if (type === 'pipeline.halted' || type === 'pipeline.paused') {
+                    title = type === 'pipeline.halted' ? 'توقفت العملية' : 'تم إيقاف العملية مؤقتاً';
+                    body = (event.error || '') + ' | ' + caseTitle;
+                    icon = 'warning';
+                } else if (type === 'rag.processing.parsed' || type === 'rag.processing.completed' || type === 'rag.processing.failed') {
+                    title = event.title || 'تحديث ملف النظام';
+                    body = event.body || '';
+                    icon = type === 'rag.processing.failed' ? 'error' : 'fact_check';
+                } else if (type === 'bulk.action.completed') {
+                    title = event.title || 'اكتملت عملية مجمعة';
+                    body = event.body || '';
+                    icon = 'checklist';
+                } else if (type === 'case.status_changed') {
+                    const statusLabels = {
+                        'phase3_completed': 'اكتملت القضية', 'completed_with_warnings': 'اكتملت مع تحذيرات',
+                        'failed': 'فشلت القضية', 'phase2_completed': 'اكتمل التحليل القانوني',
+                        'phase2_processing': 'بدأت المرحلة الثانية', 'phase3_pending': 'جاهزة للمرحلة الثالثة',
+                        'paused': 'تم إيقاف القضية مؤقتاً', 'phase1_pending': 'أعيدت القضية إلى المرحلة الأولى',
+                    };
+                    const newStatus = event.new_status;
+                    if (!statusLabels[newStatus]) return; // skip minor status changes
+                    title = statusLabels[newStatus] || 'تغير حالة القضية';
+                    body = caseTitle;
+                    icon = newStatus === 'phase3_completed' ? 'celebration' : (newStatus === 'failed' ? 'error' : 'info');
+                } else {
+                    return;
+                }
+
+                const n = {
+                    type, title, body, icon,
+                    url: event.url || '#',
+                    time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+                    read: false,
+                    id: Date.now(),
+                };
+
+                this.notifications.unshift(n);
+                if (this.notifications.length > this.MAX_NOTIFICATIONS) {
+                    this.notifications = this.notifications.slice(0, this.MAX_NOTIFICATIONS);
+                }
+
+                // Show toast only for live (non-historical) important notifications
+                const isImportant = ['agent.failed', 'pipeline.halted', 'pipeline.paused', 'case.status_changed', 'rag.processing.failed'].includes(type);
+                if (typeof window.showToast === 'function' && isImportant && !this._suppressToasts) {
+                    const isError = ['agent.failed', 'pipeline.halted', 'pipeline.paused', 'rag.processing.failed'].includes(type);
+                    const toastScope = caseTitle && caseTitle !== 'القضية' ? caseTitle : '';
+                    window.showToast(toastScope ? (title + ' - ' + toastScope) : title, isError ? 'error' : 'success');
+                }
+            },
+
+            markRead() {
+                this.notifications = this.notifications.map(n => ({ ...n, read: true }));
+            },
+
+            clearAll() {
+                this.notifications = [];
+                this.panelOpen = false;
+            },
+        };
+    }
+    </script>
+
     @stack('scripts')
 </body>
 </html>

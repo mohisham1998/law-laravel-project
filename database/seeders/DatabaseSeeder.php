@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\LegalCase;
+use Database\Seeders\LawLibrarySeeder;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -14,7 +15,10 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        // Get or create test user
+        // 1. Seed default Saudi laws (RAG) so cases can match valid legislation
+        $this->call(LawLibrarySeeder::class);
+
+        // 2. Get or create test user
         $user = User::firstOrCreate(
             ['email' => 'test@example.com'],
             [
@@ -88,7 +92,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->command->info('✅ Database seeded successfully!');
-        $this->command->info('📧 Email: test@example.com');
+        $this->command->info('📧 Email: test1@example.com');
         $this->command->info('🔑 Password: password');
         $this->command->info('📊 Cases created: ' . LegalCase::count());
     }

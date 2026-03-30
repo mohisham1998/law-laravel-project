@@ -35,54 +35,61 @@
         max-height: 80vh;
         opacity: 1;
     }
+    .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 </style>
 @endpush
 
 @section('content')
-{{-- Header --}}
-<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-primary/5 mb-8">
-    <div>
-        <h2 class="text-xl font-bold">مستودع الأدلة والمستندات</h2>
-        <p class="text-slate-500 text-sm">كل قضية لها مجلدها ومرفقاتها قابلة للتحميل</p>
+{{-- Page title --}}
+<h2 class="text-xl font-bold mb-1">مستودع الأدلة والمستندات</h2>
+<p class="text-slate-500 text-sm mb-6">كل قضية لها مجلدها ومرفقاتها قابلة للتحميل</p>
+
+{{-- Toolbar: search, sort, upload (global filters – UI/UX friendly placement) --}}
+<div class="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-primary/5">
+    <div class="relative flex-1 min-w-[12rem] max-w-md" id="searchWrap">
+        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">search</span>
+        <input type="text" id="caseSearch" placeholder="ابحث عن قضية أو مستند..." autocomplete="off" class="w-full bg-background-light border-none rounded-xl pr-10 pl-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all" />
+        <div id="searchResultsDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-primary/10 shadow-lg z-20 overflow-hidden">
+            <div id="searchResultsContent"></div>
+        </div>
     </div>
-    <button onclick="document.getElementById('uploadModal').classList.remove('hidden')" class="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20">
+    <div class="flex items-center gap-2 shrink-0">
+        <span class="text-xs text-slate-500 hidden sm:inline">ترتيب:</span>
+        <div class="relative w-[8.5rem]">
+            <select id="caseSort" class="w-full text-xs bg-background-light border-none rounded-xl py-2.5 pr-8 pl-3 focus:ring-2 focus:ring-primary/20 appearance-none">
+                <option value="date_desc" {{ ($sort ?? 'date_desc') === 'date_desc' ? 'selected' : '' }}>الأحدث</option>
+                <option value="date_asc" {{ ($sort ?? '') === 'date_asc' ? 'selected' : '' }}>الأقدم</option>
+                <option value="name_asc" {{ ($sort ?? '') === 'name_asc' ? 'selected' : '' }}>أ-ي</option>
+                <option value="name_desc" {{ ($sort ?? '') === 'name_desc' ? 'selected' : '' }}>ي-أ</option>
+            </select>
+            <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">expand_more</span>
+        </div>
+    </div>
+    <button onclick="document.getElementById('uploadModal').classList.remove('hidden')" class="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20 shrink-0">
         <span class="material-symbols-outlined">upload_file</span>
         <span>رفع ملف جديد</span>
     </button>
 </div>
 
-<div class="flex gap-8">
-    {{-- Case folders: wider sidebar + real-time search --}}
-    <aside class="w-80 xl:w-96 shrink-0 flex flex-col gap-4">
-        <div class="flex-1 min-h-0 flex flex-col">
-            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 pr-2">مجلدات القضايا</h3>
-            <div class="relative mb-3" id="searchWrap">
-                <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">search</span>
-                <input type="text" id="caseSearch" placeholder="ابحث عن قضية أو مستند..." autocomplete="off" class="w-full bg-background-light border-none rounded-xl pr-10 pl-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all" />
-                <div id="searchResultsDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-primary/10 shadow-lg z-20 overflow-hidden">
-                    <div id="searchResultsContent"></div>
-                </div>
-            </div>
-            <div class="flex items-center gap-2 mb-3">
-                <span class="text-xs text-slate-500">ترتيب:</span>
-                <div class="relative flex-1">
-                    <select id="caseSort" class="w-full text-xs bg-background-light border-none rounded-lg py-2 pl-8 pr-2 focus:ring-2 focus:ring-primary/20 appearance-none">
-                        <option value="date_desc" {{ ($sort ?? 'date_desc') === 'date_desc' ? 'selected' : '' }}>الأحدث</option>
-                        <option value="date_asc" {{ ($sort ?? '') === 'date_asc' ? 'selected' : '' }}>الأقدم</option>
-                        <option value="name_asc" {{ ($sort ?? '') === 'name_asc' ? 'selected' : '' }}>أ-ي</option>
-                        <option value="name_desc" {{ ($sort ?? '') === 'name_desc' ? 'selected' : '' }}>ي-أ</option>
-                    </select>
-                    <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">expand_more</span>
-                </div>
-            </div>
-            <div class="flex flex-col gap-1 overflow-y-auto min-h-0" id="caseFolderList">
+{{-- Two columns: folders (narrower) | attachments (wider) – attachments get more space --}}
+<div class="grid grid-cols-1 lg:grid-cols-[minmax(16rem,22rem)_1fr] gap-6 lg:gap-8">
+    {{-- Column 1: Case folders – constrained width so attachments column is wider --}}
+    <section class="min-w-0 flex flex-col bg-white rounded-xl border border-primary/10 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-primary/5 shrink-0">
+            <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">folder_open</span>
+                مجلدات القضايا
+            </h3>
+        </div>
+        <div class="flex flex-col gap-1 overflow-y-auto min-h-0 flex-1 min-h-[20rem]" id="caseFolderList">
                 {{-- All Documents: dropdown with case folders nested under it --}}
                 <div class="rounded-xl border {{ !request('case_id') ? 'bg-white shadow-sm border-slate-200' : 'border-transparent' }}">
                     <div class="flex items-center gap-2 px-4 py-3">
                         <button type="button" id="allDocsDropdownToggle" class="flex items-center gap-2 flex-1 min-w-0 text-right rounded-lg hover:bg-slate-50 transition-colors -m-1 p-1" aria-expanded="true" aria-controls="allDocsDropdownContent">
                             <span class="material-symbols-outlined text-primary shrink-0 transition-transform" id="allDocsChevron">expand_more</span>
                             <span class="material-symbols-outlined {{ !request('case_id') ? 'fill-1 text-primary' : 'text-slate-400' }} shrink-0">folder_open</span>
-                            <span class="text-sm font-bold truncate {{ !request('case_id') ? 'text-primary' : 'text-slate-600' }}">جميع المستندات</span>
+                            <span class="text-sm font-bold break-words {{ !request('case_id') ? 'text-primary' : 'text-slate-600' }}">جميع المستندات</span>
                             <span class="mr-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full shrink-0">{{ $documents->total() }}</span>
                         </button>
                         <a href="{{ route('documents.index', array_filter(['sort' => $sort ?? 'date_desc'])) }}" class="shrink-0 p-1.5 rounded-lg hover:bg-primary/10 text-slate-500 hover:text-primary transition-colors" title="عرض الكل">
@@ -94,7 +101,7 @@
                             <a href="{{ route('documents.index', ['case_id' => $c->id, 'sort' => $sort ?? 'date_desc']) }}" class="case-folder-item flex flex-col gap-0.5 px-3 py-2.5 rounded-lg transition-all {{ ($selectedCaseId ?? '') == $c->id ? 'bg-primary/10 text-primary' : 'hover:bg-slate-50 text-slate-600' }}" data-search="{{ $c->title }}">
                                 <div class="flex items-center gap-2">
                                     <span class="material-symbols-outlined {{ ($selectedCaseId ?? '') == $c->id ? 'fill-1 text-primary' : 'text-slate-400' }} text-lg">folder</span>
-                                    <span class="text-sm font-semibold truncate flex-1 min-w-0" title="{{ $c->title }}">{{ $c->title }}</span>
+                                    <span class="text-sm font-semibold break-words flex-1 min-w-0" title="{{ $c->title }}">{{ $c->title }}</span>
                                     <span class="text-xs bg-slate-100 px-2 py-0.5 rounded-full shrink-0">{{ $c->documents_count }}</span>
                                 </div>
                                 <p class="text-[11px] text-slate-400 pr-8">{{ $c->created_at->format('Y-m-d') }}</p>
@@ -104,46 +111,55 @@
                         @endforelse
                     </div>
                 </div>
-            </div>
-            <p id="caseSearchNoResults" class="text-xs text-slate-400 px-4 py-2 hidden">لا توجد نتائج</p>
         </div>
-    </aside>
-    
-    {{-- Documents Grid --}}
-    <div class="flex-1">
-        @if($selectedCaseId && $cases->firstWhere('id', $selectedCaseId))
-            <p class="text-sm text-slate-500 mb-4">مستندات قضية: <strong>{{ $cases->firstWhere('id', $selectedCaseId)->title }}</strong></p>
-        @endif
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <p id="caseSearchNoResults" class="text-xs text-slate-400 px-4 py-2 hidden border-t border-slate-100"></p>
+    </section>
+
+    {{-- Column 2: Attachments grid (parallel to folders) --}}
+    <section class="min-w-0 flex flex-col bg-white rounded-xl border border-primary/10 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-primary/5 shrink-0">
+            <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">description</span>
+                المرفقات
+            </h3>
+            @if($selectedCaseId && $cases->firstWhere('id', $selectedCaseId))
+                <p class="text-xs text-slate-500 mt-1">قضية: {{ $cases->firstWhere('id', $selectedCaseId)->title }}</p>
+            @endif
+        </div>
+        <div class="p-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 overflow-y-auto items-stretch">
             @forelse($documents as $document)
-                <div id="doc-{{ $document->id }}" class="bg-white p-5 rounded-xl border border-primary/5 shadow-sm hover:border-primary transition-all magnetic-element {{ (isset($highlightDocumentId) && $highlightDocumentId == $document->id) ? 'document-highlight' : '' }}">
-                    <div class="flex items-start gap-4">
+                <div id="doc-{{ $document->id }}" class="bg-white p-5 rounded-xl border border-primary/5 shadow-sm hover:border-primary transition-all magnetic-element flex flex-col h-full {{ (isset($highlightDocumentId) && $highlightDocumentId == $document->id) ? 'document-highlight' : '' }}">
+                    {{-- Filename area: fixed height so size/date align across cards; full name wraps, no truncation --}}
+                    <div class="flex items-start gap-4 shrink-0 h-[7.5rem] min-h-[7.5rem] max-h-[7.5rem]">
                         @if($document->isPdf())
-                            <div class="size-12 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
-                                <span class="material-symbols-outlined">picture_as_pdf</span>
+                            <div class="size-12 shrink-0 rounded-lg bg-red-50 flex items-center justify-center text-red-600">
+                                <span class="material-symbols-outlined text-2xl">picture_as_pdf</span>
                             </div>
                         @elseif($document->isImage())
-                            <div class="size-12 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
-                                <span class="material-symbols-outlined">image</span>
+                            <div class="size-12 shrink-0 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                <span class="material-symbols-outlined text-2xl">image</span>
                             </div>
                         @else
-                            <div class="size-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
-                                <span class="material-symbols-outlined">description</span>
+                            <div class="size-12 shrink-0 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+                                <span class="material-symbols-outlined text-2xl">description</span>
                             </div>
                         @endif
-                        <div class="flex-1 min-w-0">
-                            <h4 class="font-bold text-sm truncate" title="{{ $document->filename }}">{{ $document->filename }}</h4>
-                            <p class="text-xs text-slate-500">{{ $document->human_readable_size ?? '---' }}</p>
-                            <p class="text-xs text-slate-400 mt-1">{{ $document->case?->title ?? '—' }}</p>
-                            <p class="text-xs text-slate-400">{{ $document->created_at->format('Y-m-d') }}</p>
+                        <div class="flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden pr-0.5">
+                            <h4 class="font-bold text-sm break-words leading-tight w-full" title="{{ $document->filename }}">{{ $document->filename }}</h4>
                         </div>
                     </div>
-                    <div class="flex gap-2 mt-4">
-                        <a href="{{ route('documents.preview', $document) }}" target="_blank" rel="noopener" class="flex-1 text-center py-2 bg-primary/10 text-primary rounded-lg text-xs font-bold hover:bg-primary/20 transition-colors" title="معاينة">
-                            <span class="material-symbols-outlined text-sm align-middle">visibility</span>
+                    {{-- Fixed block: size, case, date·time always in same place --}}
+                    <div class="mt-3 space-y-1 shrink-0">
+                        <p class="text-xs text-slate-500 leading-snug">{{ $document->human_readable_size ?? '---' }}</p>
+                        <p class="text-xs text-slate-400 leading-snug break-words line-clamp-1" title="{{ $document->case?->title ?? '' }}">{{ $document->case?->title ?? '—' }}</p>
+                        <p class="text-xs text-slate-400 leading-snug">{{ $document->created_at->timezone('Asia/Riyadh')->format('Y-m-d') }} · {{ $document->created_at->timezone('Asia/Riyadh')->format('g:i A') }}</p>
+                    </div>
+                    <div class="flex gap-2 mt-4 shrink-0">
+                        <a href="{{ route('documents.preview', $document) }}" target="_blank" rel="noopener" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20 transition-colors" title="معاينة">
+                            <span class="material-symbols-outlined text-lg">visibility</span>
                         </a>
-                        <a href="{{ route('documents.download', $document) }}" class="flex-1 text-center py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors" title="تحميل">
-                            <span class="material-symbols-outlined text-sm align-middle">download</span>
+                        <a href="{{ route('documents.download', $document) }}" class="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors" title="تحميل">
+                            <span class="material-symbols-outlined text-lg">download</span>
                         </a>
                     </div>
                 </div>
@@ -157,11 +173,11 @@
         </div>
         
         @if($documents->hasPages())
-            <div class="mt-6">
+            <div class="mt-6 px-4 pb-4">
                 {{ $documents->links() }}
             </div>
         @endif
-    </div>
+    </section>
 </div>
 
 {{-- Upload Modal: portal-style UI, multiple files, loading, toast on success --}}
@@ -179,13 +195,13 @@
             <div class="mb-5">
                 <label class="block text-sm font-semibold text-slate-700 mb-2">مجلد القضية</label>
                 <div class="relative">
-                    <select name="case_id" id="uploadCaseId" class="upload-case-select w-full pl-10 pr-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary text-slate-800" required>
+                    <select name="case_id" id="uploadCaseId" class="upload-case-select w-full pr-10 pl-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary text-slate-800 appearance-none" required>
                         <option value="">اختر القضية</option>
                         @foreach($cases as $c)
                             <option value="{{ $c->id }}" {{ (old('case_id', $selectedCaseId) == $c->id ? 'selected' : '') }}>{{ $c->title }}</option>
                         @endforeach
                     </select>
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                 </div>
             </div>
             <div class="mb-5">

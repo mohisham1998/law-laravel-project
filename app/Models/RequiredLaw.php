@@ -16,6 +16,8 @@ class RequiredLaw extends Model
         'law_name',
         'reason',
         'is_uploaded',
+        'law_registry_id',
+        'subject_area',
     ];
 
     /** @var array<string, string> */
@@ -31,5 +33,10 @@ class RequiredLaw extends Model
     public function uploadedLaw(): HasOne
     {
         return $this->hasOne(CaseLaw::class, 'required_law_id');
+    }
+
+    public function lawRegistry(): BelongsTo
+    {
+        return $this->belongsTo(LawRegistry::class);
     }
 }

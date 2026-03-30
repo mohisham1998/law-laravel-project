@@ -31,15 +31,24 @@ class LegalCase extends Model
         'phase',
         'current_agent',
         'progress_percentage',
+        'resume_from_agent',
         'skill_version',
         'skill_hash',
         'model_used',
+        'puter_token',
         'total_tokens',
         'total_cost_usd',
         'started_at',
         'completed_at',
+        'pipeline_started_at',
+        'halted_at',
+        'halted_at_agent',
+        'halt_reason',
+        'retry_budget_max',
+        'retry_budget_used',
         'last_failed_phase',
         'last_error_message',
+        'agent_model_overrides',
     ];
 
     /** @var array<string, string> */
@@ -52,7 +61,23 @@ class LegalCase extends Model
         'total_cost_usd' => 'decimal:4',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'pipeline_started_at' => 'datetime',
+        'halted_at' => 'datetime',
+        'agent_model_overrides' => 'array',
+        'puter_token' => 'encrypted',
     ];
+
+    /**
+     * Return the stored puter token, or empty string if not set.
+     */
+    public function getPuterToken(): string
+    {
+        try {
+            return (string) ($this->puter_token ?? '');
+        } catch (\Throwable) {
+            return '';
+        }
+    }
 
     public function user(): BelongsTo
     {
@@ -111,7 +136,10 @@ class LegalCase extends Model
 
     public function canRetry(): bool
     {
-        return $this->status === CaseStatus::Failed && !is_null($this->last_failed_phase);
+        return $this->status === CaseStatus::Failed 
+            || $this->status === CaseStatus::Paused
+            || $this->status === CaseStatus::Halted
+            || $this->status === CaseStatus::TimedOut;
     }
 
     public function markAsFailed(string $phase, string $errorMessage): void
@@ -123,11 +151,27 @@ class LegalCase extends Model
         ]);
     }
 
+    /**
+     * Get the effective model for a specific agent number.
+     * Agent-level override wins over the global case model, which wins over the default.
+     */
+    public function modelForAgent(int $agentNumber): string
+    {
+        $overrides = $this->agent_model_overrides ?? [];
+        return $overrides[(string) $agentNumber]
+            ?? $this->model_used
+            ?? config('openrouter.default_model');
+    }
+
     public function clearFailure(): void
     {
         $this->update([
             'last_failed_phase' => null,
             'last_error_message' => null,
+            'halted_at' => null,
+            'halted_at_agent' => null,
+            'halt_reason' => null,
+            'pipeline_started_at' => null,
         ]);
     }
 }

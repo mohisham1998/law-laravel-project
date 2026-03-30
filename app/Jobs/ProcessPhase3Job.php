@@ -7,6 +7,7 @@ use App\Enums\CaseStatus;
 use App\Models\AgentExecution;
 use App\Models\CaseMetrics;
 use App\Models\LegalCase;
+use App\Services\Agents\Phase3\ArabicPolisherAgent;
 use App\Services\Agents\Phase3\DevilsAdvocateAgent;
 use App\Services\Agents\Phase3\FortificationAgent;
 use App\Services\Agents\Phase3\JudgeAgent;
@@ -63,11 +64,14 @@ class ProcessPhase3Job implements ShouldQueue
         $case = $this->case;
 
         try {
+            $oldStatus = $case->status->value ?? $case->status;
             $case->update([
                 'status' => CaseStatus::Phase3Processing,
                 'phase' => 3,
                 'pipeline_started_at' => now(),
             ]);
+
+            app(CaseEventService::class)->emitStatusChanged($case->id, (string) $oldStatus, CaseStatus::Phase3Processing->value);
 
             $events = app(CaseEventService::class);
             $tokenTracker = app(TokenTracker::class);
@@ -81,6 +85,7 @@ class ProcessPhase3Job implements ShouldQueue
                 10 => app(JudgeAgent::class),
                 11 => app(DevilsAdvocateAgent::class),
                 12 => app(FortificationAgent::class),
+                13 => app(ArabicPolisherAgent::class),
             ];
 
             foreach ($agents as $agentNum => $agent) {
@@ -161,6 +166,7 @@ class ProcessPhase3Job implements ShouldQueue
                 ? CaseStatus::Phase3Completed
                 : CaseStatus::CompletedWithWarnings;
 
+            $oldStatus = $case->status->value ?? $case->status;
             $case->update([
                 'status' => $finalStatus,
                 'phase' => 3,
@@ -168,6 +174,7 @@ class ProcessPhase3Job implements ShouldQueue
                 'current_agent' => null,
                 'completed_at' => now(),
             ]);
+            app(CaseEventService::class)->emitStatusChanged($case->id, (string) $oldStatus, $finalStatus->value);
 
             Log::info("Phase 3 complete — quality gate " . ($qualityGatePassed ? 'PASSED' : 'FAILED'), ['case_id' => $case->id]);
 
@@ -177,10 +184,13 @@ class ProcessPhase3Job implements ShouldQueue
             
             // Convert to user-friendly error
             $userMessage = $this->getUserFriendlyError($e);
+            $oldStatus = $case->status->value ?? $case->status;
             $case->update([
                 'status' => CaseStatus::Failed,
                 'last_error_message' => $userMessage,
             ]);
+            app(CaseEventService::class)->emitFailed($case->id, (int) ($case->current_agent ?? 0), 'المرحلة الثالثة', $userMessage);
+            app(CaseEventService::class)->emitStatusChanged($case->id, (string) $oldStatus, CaseStatus::Failed->value);
             throw $e;
         }
     }
@@ -216,56 +226,73 @@ class ProcessPhase3Job implements ShouldQueue
     }
     
     /**
-     * Post-process the Agent 12 brief (v3) using BriefPostProcessor.
+     * Post-process the Agent 12 brief (v3) and the Agent 13 polished brief using BriefPostProcessor.
      */
     private function postProcessBriefV3(LegalCase $case): void
     {
+        // Process 13_final_brief_v3.md (from Agent 12)
         $output = $case->outputs()->where('filename', '13_final_brief_v3.md')->first();
-        if (!$output) {
-            return;
-        }
-
-        $content = (string) ($output->content ?? '');
-        if (empty(trim($content)) && $output->file_path) {
-            $full = Storage::disk('local')->path($output->file_path);
-            if (file_exists($full)) {
-                $content = file_get_contents($full);
+        if ($output) {
+            $content = (string) ($output->content ?? '');
+            if (empty(trim($content)) && $output->file_path) {
+                $full = Storage::disk('local')->path($output->file_path);
+                if (file_exists($full)) {
+                    $content = file_get_contents($full);
+                }
             }
-        }
 
-        // If Agent 12's FINAL_BRIEF_V3 section is truncated (< 5000 chars), fall back
-        // to the v2 brief from Agent 9 which is complete and well-formed.
-        if (mb_strlen(trim($content)) < 5000) {
-            Log::warning('13_final_brief_v3.md too short — falling back to 09_final_brief_v2.md', [
-                'case_id' => $case->id,
-                'v3_length' => mb_strlen(trim($content)),
-            ]);
-            $v2output = $case->outputs()->where('filename', '09_final_brief_v2.md')->first();
-            if ($v2output) {
-                $v2content = (string) ($v2output->content ?? '');
-                if (empty(trim($v2content)) && $v2output->file_path) {
-                    $full = Storage::disk('local')->path($v2output->file_path);
-                    if (file_exists($full)) {
-                        $v2content = file_get_contents($full);
+            // If Agent 12's FINAL_BRIEF_V3 section is truncated (< 5000 chars), fall back
+            // to the v2 brief from Agent 9 which is complete and well-formed.
+            if (mb_strlen(trim($content)) < 5000) {
+                Log::warning('13_final_brief_v3.md too short — falling back to 09_final_brief_v2.md', [
+                    'case_id'   => $case->id,
+                    'v3_length' => mb_strlen(trim($content)),
+                ]);
+                $v2output = $case->outputs()->where('filename', '09_final_brief_v2.md')->first();
+                if ($v2output) {
+                    $v2content = (string) ($v2output->content ?? '');
+                    if (empty(trim($v2content)) && $v2output->file_path) {
+                        $full = Storage::disk('local')->path($v2output->file_path);
+                        if (file_exists($full)) {
+                            $v2content = file_get_contents($full);
+                        }
+                    }
+                    if (mb_strlen(trim($v2content)) >= 5000) {
+                        $content = $v2content;
                     }
                 }
-                if (mb_strlen(trim($v2content)) >= 5000) {
-                    $content = $v2content;
+            }
+
+            if (!empty(trim($content))) {
+                $cleaned = BriefPostProcessor::process($content);
+                $output->update(['content' => $cleaned]);
+                if ($output->file_path) {
+                    Storage::disk('local')->put($output->file_path, $cleaned);
                 }
+                Log::info('BriefPostProcessor applied to 13_final_brief_v3.md', ['case_id' => $case->id]);
             }
         }
 
-        if (empty(trim($content))) {
-            return;
-        }
+        // Process 14_final_brief_polished.md (from Agent 13) if it exists
+        $polishedOutput = $case->outputs()->where('filename', '14_final_brief_polished.md')->latest('id')->first();
+        if ($polishedOutput) {
+            $polishedContent = (string) ($polishedOutput->content ?? '');
+            if (empty(trim($polishedContent)) && $polishedOutput->file_path) {
+                $full = Storage::disk('local')->path($polishedOutput->file_path);
+                if (file_exists($full)) {
+                    $polishedContent = file_get_contents($full);
+                }
+            }
 
-        $cleaned = BriefPostProcessor::process($content);
-        $output->update(['content' => $cleaned]);
-        if ($output->file_path) {
-            Storage::disk('local')->put($output->file_path, $cleaned);
+            if (!empty(trim($polishedContent))) {
+                $cleaned = BriefPostProcessor::process($polishedContent);
+                $polishedOutput->update(['content' => $cleaned]);
+                if ($polishedOutput->file_path) {
+                    Storage::disk('local')->put($polishedOutput->file_path, $cleaned);
+                }
+                Log::info('BriefPostProcessor applied to 14_final_brief_polished.md', ['case_id' => $case->id]);
+            }
         }
-
-        Log::info('BriefPostProcessor applied to 13_final_brief_v3.md', ['case_id' => $case->id]);
     }
 
     /**
@@ -316,10 +343,13 @@ class ProcessPhase3Job implements ShouldQueue
         
         // Update case with user-friendly error message
         $userMessage = $this->getUserFriendlyError($exception);
+        $oldStatus = $case->status->value ?? $case->status;
         $case->update([
             'status' => CaseStatus::Failed,
             'last_error_message' => $userMessage,
         ]);
+        app(CaseEventService::class)->emitFailed($case->id, (int) ($case->current_agent ?? 0), 'المرحلة الثالثة', $userMessage);
+        app(CaseEventService::class)->emitStatusChanged($case->id, (string) $oldStatus, CaseStatus::Failed->value);
     }
     
     /**

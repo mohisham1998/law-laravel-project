@@ -10,22 +10,78 @@ class EmbeddingService
     protected string $apiKey;
     protected string $model;
     protected string $baseUrl;
+    protected ?string $puterToken;
+    protected string $puterApiBase;
 
-    public function __construct()
+    public function __construct(?string $puterToken = null)
     {
+        $this->puterToken = $puterToken ?: null;
         // Use OpenRouter API (same as AI agents)
         $this->apiKey = config('openrouter.api_key', env('OPENROUTER_API_KEY', ''));
         $this->baseUrl = 'https://openrouter.ai/api/v1';
-        
+        $this->puterApiBase = rtrim(config('puter.api_base_url', 'https://api.puter.com'), '/');
+
         // Always use OpenAI's text-embedding-3-small for embeddings (fast & cheap)
         $this->model = 'openai/text-embedding-3-small';
     }
 
     /**
-     * Generate embedding for a single text using OpenRouter's embeddings API
+     * Generate embedding via Puter's OpenAI-compatible proxy.
+     * Returns empty embedding array on failure so caller can fall back.
+     */
+    protected function generateEmbeddingViaPuter(string $text): array
+    {
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->puterToken,
+                'Content-Type' => 'application/json',
+                'Origin' => config('app.url', 'http://127.0.0.1:8000'),
+            ])->timeout(30)->post("{$this->puterApiBase}/puterai/openai/v1/embeddings", [
+                'model' => 'text-embedding-3-small',
+                'input' => $text,
+            ]);
+
+            if (!$response->successful()) {
+                Log::warning('Puter embedding API error, falling back to OpenRouter', [
+                    'status' => $response->status(),
+                ]);
+                return ['embedding' => []];
+            }
+
+            $data = $response->json();
+            $embedding = $data['data'][0]['embedding'] ?? [];
+
+            if (empty($embedding)) {
+                return ['embedding' => []];
+            }
+
+            return [
+                'embedding' => $embedding,
+                'model' => 'puter/text-embedding-3-small',
+                'usage' => $data['usage'] ?? [],
+            ];
+        } catch (\Exception $e) {
+            Log::warning('Puter embedding failed, falling back to OpenRouter', [
+                'error' => $e->getMessage(),
+            ]);
+            return ['embedding' => []];
+        }
+    }
+
+    /**
+     * Generate embedding for a single text.
+     * Priority: Puter (if token present) → OpenRouter → deterministic fallback.
      */
     public function generateEmbedding(string $text): array
     {
+        // Try Puter first when token is available
+        if (!empty($this->puterToken)) {
+            $result = $this->generateEmbeddingViaPuter($text);
+            if (!empty($result['embedding'])) {
+                return $result;
+            }
+        }
+
         if (empty($this->apiKey)) {
             Log::warning('OpenRouter API key not set; using fallback embedding');
             return $this->generateFallbackEmbedding($text);
@@ -48,21 +104,21 @@ class EmbeddingService
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
-                
+
                 // Fallback: Generate deterministic embedding from text
                 return $this->generateFallbackEmbedding($text);
             }
 
             $data = $response->json();
-            
+
             // OpenAI-compatible response format
             $embedding = $data['data'][0]['embedding'] ?? [];
-            
+
             if (empty($embedding)) {
                 Log::warning('Empty embedding returned from API');
                 return $this->generateFallbackEmbedding($text);
             }
-            
+
             return [
                 'embedding' => $embedding,
                 'model' => $this->model,
@@ -73,7 +129,7 @@ class EmbeddingService
                 'error' => $e->getMessage(),
                 'text_length' => strlen($text),
             ]);
-            
+
             // Fallback: Generate deterministic embedding
             return $this->generateFallbackEmbedding($text);
         }

@@ -19,6 +19,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/dashboard', [\App\Http\Controllers\Api\DashboardController::class, 'index']);
+    Route::get('/dashboard/stats', [\App\Http\Controllers\Api\DashboardController::class, 'stats']);
     Route::post('/admin/validate-skill', [\App\Http\Controllers\Api\AdminController::class, 'validateSkill']);
     Route::get('/settings', [SettingsController::class, 'index']);
     Route::patch('/settings', [SettingsController::class, 'update']);
@@ -41,4 +42,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cases/{id}/start-phase2', [\App\Http\Controllers\Api\CaseController::class, 'startPhase2']);
     Route::post('/cases/{id}/start-phase3', [\App\Http\Controllers\Api\CaseController::class, 'startPhase3']);
     Route::delete('/cases/{id}', [\App\Http\Controllers\Api\CaseController::class, 'destroy']);
+    
+    // T001-T003: Dynamic UI Values - Case progress and control endpoints
+    Route::get('/cases/{id}/progress', [\App\Http\Controllers\Api\CaseController::class, 'progress']);
+    Route::post('/cases/{id}/pause', [\App\Http\Controllers\Api\CaseController::class, 'pause']);
+    Route::post('/cases/{id}/resume', [\App\Http\Controllers\Api\CaseController::class, 'resume']);
 });

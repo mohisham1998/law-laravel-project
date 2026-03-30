@@ -15,6 +15,8 @@ enum CaseStatus: string
     case Phase3Processing = 'phase3_processing';
     case Phase3Completed = 'phase3_completed';
     case CompletedWithWarnings = 'completed_with_warnings';
+    case Halted = 'halted';
+    case TimedOut = 'timed_out';
     case Failed = 'failed';
     case Paused = 'paused';
     case Cancelled = 'cancelled';

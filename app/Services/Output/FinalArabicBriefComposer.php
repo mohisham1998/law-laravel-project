@@ -19,8 +19,9 @@ class FinalArabicBriefComposer
      */
     public static function compose(LegalCase $case): ?string
     {
-        // Priority: v3 > v2 > v1
+        // Priority: polished (Agent 13) > v3 (Agent 12) > v2 (Agent 9) > v1 (Agent 8)
         $candidates = [
+            '14_final_brief_polished.md',
             '13_final_brief_v3.md',
             '09_final_brief_v2.md',
             '08_final_brief.md',

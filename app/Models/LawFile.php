@@ -13,6 +13,7 @@ class LawFile extends Model
 
     protected $fillable = [
         'law_registry_id',
+        'uploaded_by_user_id',
         'filename',
         'file_path',
         'file_size',
@@ -34,6 +35,11 @@ class LawFile extends Model
     public function lawRegistry(): BelongsTo
     {
         return $this->belongsTo(LawRegistry::class);
+    }
+
+    public function uploader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by_user_id');
     }
 
     public function articles(): HasMany

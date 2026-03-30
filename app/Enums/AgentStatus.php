@@ -9,4 +9,5 @@ enum AgentStatus: string
     case Completed = 'completed';
     case Failed = 'failed';
     case Retrying = 'retrying';
+    case Skipped = 'skipped';
 }

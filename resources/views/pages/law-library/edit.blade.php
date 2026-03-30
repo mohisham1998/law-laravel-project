@@ -38,17 +38,20 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">التصنيف</label>
-                    <select name="category" class="w-full px-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary">
-                        <option value="">اختر التصنيف</option>
-                        <option value="civil" {{ old('category', $lawRegistry->category) === 'civil' ? 'selected' : '' }}>مدني</option>
-                        <option value="criminal" {{ old('category', $lawRegistry->category) === 'criminal' ? 'selected' : '' }}>جزائي</option>
-                        <option value="commercial" {{ old('category', $lawRegistry->category) === 'commercial' ? 'selected' : '' }}>تجاري</option>
-                        <option value="labor" {{ old('category', $lawRegistry->category) === 'labor' ? 'selected' : '' }}>عمالي</option>
-                        <option value="family" {{ old('category', $lawRegistry->category) === 'family' ? 'selected' : '' }}>أحوال شخصية</option>
-                        <option value="administrative" {{ old('category', $lawRegistry->category) === 'administrative' ? 'selected' : '' }}>إداري</option>
-                        <option value="evidence" {{ old('category', $lawRegistry->category) === 'evidence' ? 'selected' : '' }}>إثبات</option>
-                        <option value="procedures" {{ old('category', $lawRegistry->category) === 'procedures' ? 'selected' : '' }}>إجراءات</option>
-                    </select>
+                    <div class="relative">
+                        <select name="category" class="w-full pr-10 pl-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary appearance-none">
+                            <option value="">اختر التصنيف</option>
+                            <option value="civil" {{ old('category', $lawRegistry->category) === 'civil' ? 'selected' : '' }}>مدني</option>
+                            <option value="criminal" {{ old('category', $lawRegistry->category) === 'criminal' ? 'selected' : '' }}>جزائي</option>
+                            <option value="commercial" {{ old('category', $lawRegistry->category) === 'commercial' ? 'selected' : '' }}>تجاري</option>
+                            <option value="labor" {{ old('category', $lawRegistry->category) === 'labor' ? 'selected' : '' }}>عمالي</option>
+                            <option value="family" {{ old('category', $lawRegistry->category) === 'family' ? 'selected' : '' }}>أحوال شخصية</option>
+                            <option value="administrative" {{ old('category', $lawRegistry->category) === 'administrative' ? 'selected' : '' }}>إداري</option>
+                            <option value="evidence" {{ old('category', $lawRegistry->category) === 'evidence' ? 'selected' : '' }}>إثبات</option>
+                            <option value="procedures" {{ old('category', $lawRegistry->category) === 'procedures' ? 'selected' : '' }}>إجراءات</option>
+                        </select>
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
                 </div>
 
                 <div>
@@ -60,11 +63,14 @@
 
             <div>
                 <label class="block text-sm font-semibold text-slate-700 mb-2">الحالة</label>
-                <select name="status" class="w-full px-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary" required>
-                    <option value="active" {{ old('status', $lawRegistry->status) === 'active' ? 'selected' : '' }}>نافذ</option>
-                    <option value="superseded" {{ old('status', $lawRegistry->status) === 'superseded' ? 'selected' : '' }}>منسوخ</option>
-                    <option value="draft" {{ old('status', $lawRegistry->status) === 'draft' ? 'selected' : '' }}>مسودة</option>
-                </select>
+                <div class="relative">
+                    <select name="status" class="w-full pr-10 pl-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary appearance-none" required>
+                        <option value="active" {{ old('status', $lawRegistry->status) === 'active' ? 'selected' : '' }}>نافذ</option>
+                        <option value="superseded" {{ old('status', $lawRegistry->status) === 'superseded' ? 'selected' : '' }}>منسوخ</option>
+                        <option value="draft" {{ old('status', $lawRegistry->status) === 'draft' ? 'selected' : '' }}>مسودة</option>
+                    </select>
+                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                </div>
             </div>
 
             <div class="flex gap-4">

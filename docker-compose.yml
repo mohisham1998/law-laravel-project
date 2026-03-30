@@ -5,7 +5,10 @@ services:
       dockerfile: docker/Dockerfile
     ports:
       - "8000:80"
+    env_file:
+      - .env
     environment:
+      - APP_URL=http://localhost:8000
       - APP_ENV=local
       - APP_DEBUG=true
       - DB_CONNECTION=pgsql
@@ -18,6 +21,12 @@ services:
       - QUEUE_CONNECTION=redis
     volumes:
       - .:/var/www/html
+      # Named volumes for heavy directories — stored natively in Linux,
+      # bypassing the slow Windows→WSL2 filesystem bridge.
+      # These overlay the bind mount so reads hit the fast Linux filesystem.
+      - vendor_data:/var/www/html/vendor
+      - node_modules_data:/var/www/html/node_modules
+      - bootstrap_cache:/var/www/html/bootstrap/cache
       - ./.agent/skills/legal-counsel:/var/www/html/.agent/skills/legal-counsel:ro
     depends_on:
       postgres:
@@ -51,35 +60,38 @@ services:
       retries: 5
     networks:
       - legal
-    mem_limit: 8g
-    cpus: '4'
+    mem_limit: 2g
+    cpus: '2'
     deploy:
       resources:
         limits:
-          cpus: '4'
-          memory: 8G
+          cpus: '2'
+          memory: 2G
 
   redis:
     image: redis:7-alpine
+    command: redis-server --save "" --appendonly no
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
       - legal
-    mem_limit: 4g
-    cpus: '2'
+    mem_limit: 1g
+    cpus: '1'
     deploy:
       resources:
         limits:
-          cpus: '2'
-          memory: 4G
+          cpus: '1'
+          memory: 1G
 
   worker:
     build:
       context: .
       dockerfile: docker/Dockerfile.worker
     command: php artisan horizon
+    env_file:
+      - .env
     environment:
       - APP_ENV=local
       - DB_CONNECTION=pgsql
@@ -91,6 +103,9 @@ services:
       - QUEUE_CONNECTION=redis
     volumes:
       - .:/var/www/html
+      - vendor_data:/var/www/html/vendor
+      - node_modules_data:/var/www/html/node_modules
+      - bootstrap_cache:/var/www/html/bootstrap/cache
       - ./.agent/skills/legal-counsel:/var/www/html/.agent/skills/legal-counsel:ro
     depends_on:
       - app
@@ -101,7 +116,7 @@ services:
     mem_limit: 4g
     cpus: '2'
     deploy:
-      replicas: 4
+      replicas: 2
       resources:
         limits:
           cpus: '2'
@@ -110,6 +125,9 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  vendor_data:
+  node_modules_data:
+  bootstrap_cache:
 
 networks:
   legal:

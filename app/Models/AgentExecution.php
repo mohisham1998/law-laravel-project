@@ -25,6 +25,11 @@ class AgentExecution extends Model
         'api_latency_ms',
         'error_message',
         'retry_count',
+        'corrections_count',
+        'correction_details',
+        'confidence_score',
+        'below_threshold',
+        'self_correction_exhausted',
         'started_at',
         'completed_at',
     ];
@@ -40,6 +45,11 @@ class AgentExecution extends Model
         'duration_ms' => 'integer',
         'api_latency_ms' => 'integer',
         'retry_count' => 'integer',
+        'corrections_count' => 'integer',
+        'correction_details' => 'array',
+        'confidence_score' => 'float',
+        'below_threshold' => 'boolean',
+        'self_correction_exhausted' => 'boolean',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
     ];

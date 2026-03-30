@@ -83,11 +83,22 @@
                             <div class="flex-1 min-w-0">
                                 <h4 class="font-bold text-sm truncate">{{ $file->filename }}</h4>
                                 <p class="text-xs text-slate-500">{{ $file->human_readable_size }} • {{ $file->total_articles }} مادة</p>
+                                @if($file->processing_error)
+                                    <p class="text-xs text-red-600 mt-1" title="{{ $file->processing_error }}">{{ Str::limit($file->processing_error, 60) }}</p>
+                                @endif
                             </div>
                             @if($file->is_processed)
                                 <span class="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">معالج</span>
                             @else
-                                <span class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full">قيد المعالجة</span>
+                                <span class="px-3 py-1 {{ $file->processing_error ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700' }} text-xs font-bold rounded-full">
+                                    {{ $file->processing_error ? 'فشل' : 'قيد المعالجة' }}
+                                </span>
+                                <form action="{{ route('law-library.reprocess-file', [$lawRegistry, $file]) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" class="p-2 rounded-lg hover:bg-primary/10 text-primary" title="إعادة المعالجة">
+                                        <span class="material-symbols-outlined text-lg">refresh</span>
+                                    </button>
+                                </form>
                             @endif
                         </div>
                     @endforeach

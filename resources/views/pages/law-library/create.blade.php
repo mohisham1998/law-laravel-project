@@ -44,17 +44,20 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-semibold text-slate-700 mb-2">التصنيف</label>
-                    <select name="category" class="w-full px-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary">
-                        <option value="">اختر التصنيف</option>
-                        <option value="civil" {{ old('category') === 'civil' ? 'selected' : '' }}>مدني</option>
-                        <option value="criminal" {{ old('category') === 'criminal' ? 'selected' : '' }}>جزائي</option>
-                        <option value="commercial" {{ old('category') === 'commercial' ? 'selected' : '' }}>تجاري</option>
-                        <option value="labor" {{ old('category') === 'labor' ? 'selected' : '' }}>عمالي</option>
-                        <option value="family" {{ old('category') === 'family' ? 'selected' : '' }}>أحوال شخصية</option>
-                        <option value="administrative" {{ old('category') === 'administrative' ? 'selected' : '' }}>إداري</option>
-                        <option value="evidence" {{ old('category') === 'evidence' ? 'selected' : '' }}>إثبات</option>
-                        <option value="procedures" {{ old('category') === 'procedures' ? 'selected' : '' }}>إجراءات</option>
-                    </select>
+                    <div class="relative">
+                        <select name="category" class="w-full pr-10 pl-4 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary appearance-none">
+                            <option value="">اختر التصنيف</option>
+                            <option value="civil" {{ old('category') === 'civil' ? 'selected' : '' }}>مدني</option>
+                            <option value="criminal" {{ old('category') === 'criminal' ? 'selected' : '' }}>جزائي</option>
+                            <option value="commercial" {{ old('category') === 'commercial' ? 'selected' : '' }}>تجاري</option>
+                            <option value="labor" {{ old('category') === 'labor' ? 'selected' : '' }}>عمالي</option>
+                            <option value="family" {{ old('category') === 'family' ? 'selected' : '' }}>أحوال شخصية</option>
+                            <option value="administrative" {{ old('category') === 'administrative' ? 'selected' : '' }}>إداري</option>
+                            <option value="evidence" {{ old('category') === 'evidence' ? 'selected' : '' }}>إثبات</option>
+                            <option value="procedures" {{ old('category') === 'procedures' ? 'selected' : '' }}>إجراءات</option>
+                        </select>
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                    </div>
                 </div>
 
                 <div>

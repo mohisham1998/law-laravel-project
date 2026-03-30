@@ -31,7 +31,13 @@ class LawProcessingService
             if (empty($articles)) {
                 Log::warning("No articles found in {$lawFile->filename}");
                 DB::rollBack();
-                return ['success' => false, 'message' => 'No articles found'];
+                
+                $errorMessage = 'لم يتم العثور على أي مواد قانونية في الملف. تأكد من أن الملف يحتوي على مواد بصيغة صحيحة (مثل: "المادة الأولى" أو "١/١" أو "مادة 1")';
+                
+                return [
+                    'success' => false, 
+                    'message' => $errorMessage,
+                ];
             }
 
             // Save articles to database
@@ -75,9 +81,11 @@ class LawProcessingService
                 'trace' => $e->getTraceAsString(),
             ]);
             
+            $userFriendlyMessage = $this->getUserFriendlyErrorMessage($e);
+            
             return [
                 'success' => false,
-                'message' => 'فشلت المعالجة: ' . $e->getMessage(),
+                'message' => $userFriendlyMessage,
             ];
         }
     }
@@ -204,11 +212,10 @@ class LawProcessingService
      */
     protected function prepareTextForEmbedding(LawArticle $article): string
     {
-        $lawName = $article->lawRegistry->name;
+        $lawName = $article->lawRegistry?->name ?? 'نظام غير معروف';
         $articleNumber = $article->article_number;
         $articleText = $article->article_text;
 
-        // Format: "Law Name - Article Number: Article Text"
         return "{$lawName} - المادة {$articleNumber}: {$articleText}";
     }
 
@@ -274,5 +281,43 @@ class LawProcessingService
             'processed_count' => $processedCount,
             'total_articles' => $articles->count(),
         ];
+    }
+
+    /**
+     * Convert technical error messages to user-friendly Arabic messages
+     */
+    protected function getUserFriendlyErrorMessage(\Exception $e): string
+    {
+        $message = $e->getMessage();
+        
+        if (str_contains($message, 'Law file not found') || str_contains($message, 'file_exists')) {
+            return 'لم يتم العثور على ملف النظام في التخزين. تأكد من رفع الملف بشكل صحيح.';
+        }
+        
+        if (str_contains($message, 'No articles found')) {
+            return 'لم يتم العثور على أي مواد قانونية في الملف. تأكد من أن الملف يحتوي على مواد بصيغة صحيحة (مثل: "المادة الأولى" أو "١/١" أو "مادة 1")';
+        }
+        
+        if (str_contains($message, 'encoding') || str_contains($message, 'charset') || str_contains($message, 'iconv')) {
+            return 'خطأ في ترميز الملف. تأكد من أن الملف بصيغة UTF-8 أو نص عربي صحيح.';
+        }
+        
+        if (str_contains($message, 'timeout') || str_contains($message, 'time limit') || str_contains($message, 'Maximum execution')) {
+            return 'انتهت مهلة معالجة الملف. الملف قد يكون كبيراً جداً. حاول تقسيمه إلى ملفات أصغر.';
+        }
+        
+        if (str_contains($message, 'memory') || str_contains($message, 'Memory exhausted') || str_contains($message, 'Allowed memory')) {
+            return 'نفدت ذاكرة الخادم أثناء معالجة الملف. الملف قد يكون كبيراً جداً. حاول تقسيمه إلى ملفات أصغر.';
+        }
+        
+        if (str_contains($message, 'file_get_contents') || str_contains($message, 'fopen')) {
+            return 'فشلت قراءة الملف. تأكد من صلاحيات الملف والمسار.';
+        }
+        
+        if (str_contains($message, 'Connection') || str_contains($message, 'network')) {
+            return 'خطأ في الاتصال بخدمة الذكاء الاصطناعي. تأكد من الاتصال بالإنترنت وصحة مفاتيح API.';
+        }
+        
+        return 'فشلت المعالجة: ' . $message;
     }
 }
