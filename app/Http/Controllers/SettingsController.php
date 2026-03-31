@@ -16,8 +16,9 @@ class SettingsController extends Controller
         $puterModel = auth()->user()->puter_model ?? 'gpt-5-nano';
         $puterDisclosureAcknowledged = (bool) (auth()->user()->puter_disclosure_acknowledged ?? false);
         $notificationsEnabled = (bool) (auth()->user()->notifications_enabled ?? true);
+        $openrouterApiKey = auth()->user()->openrouter_api_key ?? '';
 
-        return view('pages.settings', compact('models', 'selectedModel', 'llmProvider', 'puterModel', 'puterDisclosureAcknowledged', 'notificationsEnabled'));
+        return view('pages.settings', compact('models', 'selectedModel', 'llmProvider', 'puterModel', 'puterDisclosureAcknowledged', 'notificationsEnabled', 'openrouterApiKey'));
     }
 
     public function update(Request $request)
@@ -31,15 +32,17 @@ class SettingsController extends Controller
                 'puter_model'                   => 'nullable|string|max:255',
                 'puter_disclosure_acknowledged' => 'nullable|boolean',
                 'notifications_enabled'         => 'nullable|boolean',
+                'openrouter_api_key'            => 'nullable|string|max:500',
             ]);
 
             $updateData = array_filter([
-                'name'           => $validated['name'],
-                'email'          => $validated['email'],
-                'selected_model' => $validated['selected_model'] ?? null,
-                'llm_provider'   => $validated['llm_provider'] ?? null,
-                'puter_model'    => $validated['puter_model'] ?? null,
+                'name'               => $validated['name'],
+                'email'              => $validated['email'],
+                'selected_model'     => $validated['selected_model'] ?? null,
+                'llm_provider'       => $validated['llm_provider'] ?? null,
+                'puter_model'        => $validated['puter_model'] ?? null,
                 'notifications_enabled' => (bool) ($validated['notifications_enabled'] ?? false),
+                'openrouter_api_key' => $validated['openrouter_api_key'] ?? null,
             ], fn ($v) => $v !== null);
 
             // Only update disclosure flag when it becomes true (never reset to false)
@@ -263,9 +266,9 @@ class SettingsController extends Controller
      * Fetch live OpenRouter key info + credits. Used internally and by checkOpenRouter().
      * Calls both /auth/key (usage/limit) and /credits (total credits purchased).
      */
-    private function fetchOpenRouterBalance(): array
+    private function fetchOpenRouterBalance(?string $keyOverride = null): array
     {
-        $apiKey = config('openrouter.api_key');
+        $apiKey = $keyOverride ?: auth()->user()?->openrouter_api_key ?: config('openrouter.api_key');
         if (empty($apiKey)) {
             return ['ok' => false, 'error' => 'no_key', 'message' => 'لم يتم تعيين مفتاح OpenRouter في الإعدادات.'];
         }
@@ -322,10 +325,15 @@ class SettingsController extends Controller
      * Check OpenRouter API key and credit/usage (for UI).
      * GET /settings/check-openrouter
      */
-    public function checkOpenRouter()
+    public function checkOpenRouter(Request $request)
     {
-        // Bust cache on manual check so user gets fresh data
-        Cache::forget('openrouter_balance_status');
+        // If a key is supplied in the request body, test it directly without touching the cache.
+        if ($request->filled('api_key')) {
+            return response()->json($this->fetchOpenRouterBalance($request->input('api_key')));
+        }
+
+        // Manual refresh — bust cache so user gets fresh data for their stored key.
+        Cache::forget('openrouter_balance_status_' . auth()->id());
         return response()->json($this->fetchOpenRouterBalance());
     }
 
@@ -336,7 +344,8 @@ class SettingsController extends Controller
      */
     public function openRouterStatus()
     {
-        $data = Cache::remember('openrouter_balance_status', 300, fn () => $this->fetchOpenRouterBalance());
+        $cacheKey = 'openrouter_balance_status_' . auth()->id();
+        $data = Cache::remember($cacheKey, 300, fn () => $this->fetchOpenRouterBalance());
         return response()->json(array_merge($data, ['cached' => true]));
     }
 
@@ -418,7 +427,7 @@ class SettingsController extends Controller
                 }
                 $content = $this->extractPreviewContent($resp->json());
             } else {
-                $apiKey  = config('openrouter.api_key', '');
+                $apiKey = auth()->user()?->openrouter_api_key ?: config('openrouter.api_key', '');
                 if (empty($apiKey)) {
                     return response()->json(['ok' => false, 'error' => 'مفتاح OpenRouter غير مضبوط حالياً.'], 200);
                 }

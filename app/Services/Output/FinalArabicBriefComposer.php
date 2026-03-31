@@ -15,17 +15,25 @@ class FinalArabicBriefComposer
     /**
      * Compose the final Arabic brief for a case.
      *
+     * Selects the longest valid brief from all candidates (≥ 800 chars after trimming).
+     * Longer briefs indicate more complete content (more legal detail, appendices, etc.).
+     * Preferred quality order is used as a tiebreaker when lengths are within 10% of each other.
+     *
      * @return string|null  Clean brief, or null if no brief found
      */
     public static function compose(LegalCase $case): ?string
     {
-        // Priority: polished (Agent 13) > v3 (Agent 12) > v2 (Agent 9) > v1 (Agent 8)
+        // Ordered by preference (tiebreaker when lengths are similar)
         $candidates = [
+            '15_final_brief_enriched.md',
             '14_final_brief_polished.md',
             '13_final_brief_v3.md',
             '09_final_brief_v2.md',
             '08_final_brief.md',
         ];
+
+        $best = null;      // Best content found so far
+        $bestLength = 0;   // Length of best content
 
         foreach ($candidates as $filename) {
             $output = $case->outputs()->where('filename', $filename)->first();
@@ -43,14 +51,25 @@ class FinalArabicBriefComposer
             }
 
             $content = (string) $content;
-            if (mb_strlen(trim($content)) < 5000) {
-                continue; // Too short (truncated), skip to next candidate
+            $length = mb_strlen(trim($content));
+
+            if ($length < 800) {
+                continue; // Too short (truncated/empty), skip
             }
 
-            // Apply post-processing and return
-            return BriefPostProcessor::process($content);
+            // Accept this candidate if it's meaningfully longer than current best
+            // "meaningfully longer" = more than 10% longer (avoids swapping for tiny gains)
+            if ($best === null || $length > $bestLength * 1.10) {
+                $best = $content;
+                $bestLength = $length;
+            }
         }
 
-        return null;
+        if ($best === null) {
+            return null;
+        }
+
+        // Apply post-processing and return
+        return BriefPostProcessor::process($best);
     }
 }

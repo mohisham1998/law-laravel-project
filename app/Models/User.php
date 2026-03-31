@@ -27,6 +27,7 @@ class User extends Authenticatable
         'puter_model',
         'puter_disclosure_acknowledged',
         'notifications_enabled',
+        'openrouter_api_key',
     ];
 
     /**
@@ -37,6 +38,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'openrouter_api_key',
     ];
 
     /**
@@ -54,6 +56,7 @@ class User extends Authenticatable
             'total_cost_usd' => 'decimal:4',
             'puter_disclosure_acknowledged' => 'boolean',
             'notifications_enabled' => 'boolean',
+            'openrouter_api_key' => 'encrypted',
         ];
     }
 

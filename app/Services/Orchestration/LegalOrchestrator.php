@@ -244,7 +244,7 @@ class LegalOrchestrator
         ]);
     }
 
-    public function runPhase2(LegalCase $case, ?int $startFromAgent = null): void
+    public function runPhase2(LegalCase $case, ?int $startFromAgent = null, string $openrouterApiKey = ''): void
     {
         $case->load(['documents', 'laws', 'requiredLaws', 'outputs']);
         $totalTokens = 0;
@@ -495,7 +495,7 @@ class LegalOrchestrator
         $oldStatus = $case->status->value ?? $case->status;
         $case->update(['status' => CaseStatus::Phase3Pending, 'phase' => 3]);
         $this->events->emitStatusChanged($case->id, (string) $oldStatus, CaseStatus::Phase3Pending->value);
-        \App\Jobs\ProcessPhase3Job::dispatch($case);
+        \App\Jobs\ProcessPhase3Job::dispatch($case, $case->getPuterToken(), $openrouterApiKey);
     }
 
     /**

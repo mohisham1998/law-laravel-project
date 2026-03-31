@@ -68,7 +68,7 @@ class CaseController extends Controller
 
             $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Processing->value);
 
-            ProcessPhase2Job::dispatch($case, $case->getPuterToken())->onQueue('phase2');
+            ProcessPhase2Job::dispatch($case, $case->getPuterToken(), $case->getOpenRouterApiKey())->onQueue('phase2');
         }
 
         app(UserNotificationService::class)->emitBulkActionSummary(
@@ -153,7 +153,7 @@ class CaseController extends Controller
 
             $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Processing->value);
 
-            ProcessPhase2Job::dispatch($case, $case->getPuterToken())->onQueue('phase2');
+            ProcessPhase2Job::dispatch($case, $case->getPuterToken(), $case->getOpenRouterApiKey())->onQueue('phase2');
         }
 
         app(UserNotificationService::class)->emitBulkActionSummary(
@@ -310,7 +310,7 @@ class CaseController extends Controller
         }
 
         // Dispatch Phase 1 processing job — token read from case record
-        ProcessPhase1Job::dispatch($case, $case->getPuterToken());
+        ProcessPhase1Job::dispatch($case, $case->getPuterToken(), $case->getOpenRouterApiKey());
 
         return redirect()->route('cases.show', $case)->with('success', 'تم إنشاء القضية بنجاح وبدأت المعالجة');
     }
@@ -337,35 +337,10 @@ class CaseController extends Controller
         return view('pages.cases.timeline', compact('case'));
     }
 
-    public function pdf(Request $request, LegalCase $case): \Illuminate\Http\Response
+    public function pdf(Request $request, LegalCase $case): \Illuminate\Http\RedirectResponse
     {
-        $status = $case->status->value ?? $case->status;
-        if (! in_array($status, ['phase2_completed', 'phase3_completed', 'completed_with_warnings'], true)) {
-            return response('لا يمكن تصدير PDF إلا بعد اكتمال المعالجة.', 403, [
-                'Content-Type' => 'text/plain; charset=UTF-8',
-                'Cache-Control' => 'no-store',
-            ]);
-        }
-
-        $service = app(PdfExportService::class);
-        try {
-            $pdfContent = $service->generate($case);
-        } catch (\Throwable $e) {
-            return response($e->getMessage(), 422, [
-                'Content-Type' => 'text/plain; charset=UTF-8',
-                'Cache-Control' => 'no-store',
-            ]);
-        }
-
-        $asciiFilename = 'legal-brief-' . now()->format('Y-m-d') . '.pdf';
-        $encodedFilename = rawurlencode($service->getFilename($case));
-
-        return response($pdfContent, 200, [
-            'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => "attachment; filename=\"{$asciiFilename}\"; filename*=UTF-8''{$encodedFilename}",
-            'Content-Length'      => strlen($pdfContent),
-            'Cache-Control'       => 'no-store',
-        ]);
+        return redirect()->route('cases.show', $case)
+            ->with('info', 'تم استبدال تصدير PDF بعرض النتائج المنسقة — استخدم زر "عرض النتائج".');
     }
 
     public function retryAgent(Request $request, LegalCase $case)
@@ -402,7 +377,7 @@ class CaseController extends Controller
                 'phase' => 2,
             ]);
             $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Pending->value);
-            ProcessPhase2Job::dispatch($case, $case->getPuterToken());
+            ProcessPhase2Job::dispatch($case, $case->getPuterToken(), $case->getOpenRouterApiKey());
         } else {
             $case->update([
                 'model_used' => $modelUsed,
@@ -410,7 +385,7 @@ class CaseController extends Controller
                 'phase' => 1,
             ]);
             $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase1Pending->value);
-            ProcessPhase1Job::dispatch($case, $case->getPuterToken());
+            ProcessPhase1Job::dispatch($case, $case->getPuterToken(), $case->getOpenRouterApiKey());
         }
 
         return redirect()->route('cases.show', $case)->with('success', 'تم إعادة تشغيل المعالجة.');
@@ -458,7 +433,7 @@ class CaseController extends Controller
             $case->refresh();
         }
 
-        ProcessPhase2Job::dispatch($case, $case->getPuterToken());
+        ProcessPhase2Job::dispatch($case, $case->getPuterToken(), $case->getOpenRouterApiKey());
 
         return redirect()->route('cases.show', $case)->with('success', 'تم بدء المرحلة الثانية - جارٍ معالجة الوكلاء التسعة.');
     }
@@ -490,7 +465,7 @@ class CaseController extends Controller
 
         $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Processing->value);
 
-        ProcessPhase2Job::dispatch($case->fresh(), $case->getPuterToken());
+        ProcessPhase2Job::dispatch($case->fresh(), $case->getPuterToken(), $case->getOpenRouterApiKey());
 
         return response()->json([
             'status' => 'rerunning',
@@ -566,6 +541,7 @@ class CaseController extends Controller
         }
 
         $puterToken = $case->getPuterToken();
+        $openrouterApiKey = $case->getOpenRouterApiKey();
         $oldStatus = $case->status->value ?? $case->status;
 
         if ($agentNumber >= 1 && $agentNumber <= 9) {
@@ -575,12 +551,12 @@ class CaseController extends Controller
                 'phase' => 2,
             ]);
             $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase2Processing->value);
-            ProcessPhase2Job::dispatch($case, $puterToken);
+            ProcessPhase2Job::dispatch($case, $puterToken, $openrouterApiKey);
         } elseif ($agentNumber === 0) {
             // Phase 1 re-run
             $case->update(['status' => CaseStatus::Phase1Pending, 'phase' => 1]);
             $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase1Pending->value);
-            ProcessPhase1Job::dispatch($case, $puterToken);
+            ProcessPhase1Job::dispatch($case, $puterToken, $openrouterApiKey);
         } else {
             // Phase 3 agents (10-12)
             $case->update([
@@ -588,7 +564,7 @@ class CaseController extends Controller
                 'phase' => 3,
             ]);
             $this->emitCaseStatusChange($case, (string) $oldStatus, CaseStatus::Phase3Processing->value);
-            \App\Jobs\ProcessPhase3Job::dispatch($case, $puterToken);
+            \App\Jobs\ProcessPhase3Job::dispatch($case, $puterToken, $openrouterApiKey);
         }
 
         return response()->json([
@@ -642,7 +618,7 @@ class CaseController extends Controller
             $case->refresh();
         }
 
-        ProcessPhase2Job::dispatch($case, $case->getPuterToken());
+        ProcessPhase2Job::dispatch($case, $case->getPuterToken(), $case->getOpenRouterApiKey());
 
         return redirect()->route('cases.show', $case)
             ->with('success', "جارٍ استئناف التحليل من الوكيل رقم {$resumeFrom} — المخرجات السابقة محفوظة.");
@@ -693,7 +669,7 @@ class CaseController extends Controller
             $case->refresh();
         }
 
-        \App\Jobs\ProcessPhase3Job::dispatch($case, $case->getPuterToken());
+        \App\Jobs\ProcessPhase3Job::dispatch($case, $case->getPuterToken(), $case->getOpenRouterApiKey());
 
         if ($request->expectsJson() || $request->header('Accept') === 'application/json') {
             return response()->json(['success' => true, 'status' => 'phase3_pending']);
