@@ -105,7 +105,7 @@ Route::delete('/cases/bulk/delete', [CaseController::class, 'bulkDelete'])->name
     Route::get('/api/models', [SettingsController::class, 'getModels'])->name('api.models');
     Route::post('/api/estimate-cost', [SettingsController::class, 'estimateCost'])->name('api.estimate-cost');
     Route::post('/api/settings/model-preview', [SettingsController::class, 'modelPreview'])->name('api.model-preview');
-    Route::get('/settings/check-openrouter', [SettingsController::class, 'checkOpenRouter'])->name('settings.check-openrouter');
+    Route::match(['get', 'post'], '/settings/check-openrouter', [SettingsController::class, 'checkOpenRouter'])->name('settings.check-openrouter');
     Route::get('/settings/openrouter-status', [SettingsController::class, 'openRouterStatus'])->name('settings.openrouter-status');
     Route::get('/api/v1/settings/puter-models', [\App\Http\Controllers\PuterController::class, 'getPuterModels'])->name('api.puter-models');
 

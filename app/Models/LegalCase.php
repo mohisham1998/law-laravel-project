@@ -79,6 +79,15 @@ class LegalCase extends Model
         }
     }
 
+    /**
+     * Return the owning user's OpenRouter API key, or empty string if not set.
+     * Used to pass the key explicitly to queue jobs (which have no auth context).
+     */
+    public function getOpenRouterApiKey(): string
+    {
+        return (string) ($this->user?->openrouter_api_key ?? '');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

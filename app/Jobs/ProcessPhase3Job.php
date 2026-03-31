@@ -8,6 +8,7 @@ use App\Models\AgentExecution;
 use App\Models\CaseMetrics;
 use App\Models\LegalCase;
 use App\Services\Agents\Phase3\ArabicPolisherAgent;
+use App\Services\Agents\Phase3\BriefEnricherAgent;
 use App\Services\Agents\Phase3\DevilsAdvocateAgent;
 use App\Services\Agents\Phase3\FortificationAgent;
 use App\Services\Agents\Phase3\JudgeAgent;
@@ -55,6 +56,7 @@ class ProcessPhase3Job implements ShouldQueue
     public function __construct(
         public LegalCase $case,
         public string $puterToken = '',
+        public string $openrouterApiKey = '',
     ) {
         $this->onQueue('default');
     }
@@ -78,7 +80,7 @@ class ProcessPhase3Job implements ShouldQueue
             $costCalc = app(CostCalculator::class);
 
             // Bind correct LLM service for Phase3 agents resolved via app()
-            $llmService = LLMServiceFactory::make($this->puterToken ?: null);
+            $llmService = LLMServiceFactory::make($this->puterToken ?: null, $this->openrouterApiKey ?: null);
             app()->bind(LLMServiceInterface::class, fn () => $llmService);
 
             $agents = [
@@ -86,6 +88,7 @@ class ProcessPhase3Job implements ShouldQueue
                 11 => app(DevilsAdvocateAgent::class),
                 12 => app(FortificationAgent::class),
                 13 => app(ArabicPolisherAgent::class),
+                14 => app(BriefEnricherAgent::class),
             ];
 
             foreach ($agents as $agentNum => $agent) {
@@ -241,25 +244,30 @@ class ProcessPhase3Job implements ShouldQueue
                 }
             }
 
-            // If Agent 12's FINAL_BRIEF_V3 section is truncated (< 5000 chars), fall back
-            // to the v2 brief from Agent 9 which is complete and well-formed.
-            if (mb_strlen(trim($content)) < 5000) {
-                Log::warning('13_final_brief_v3.md too short — falling back to 09_final_brief_v2.md', [
+            // If Agent 12's FINAL_BRIEF_V3 section is truncated (< 800 chars) OR
+            // significantly shorter than the QA-checked v2 brief (fortification degraded the brief),
+            // fall back to the v2 brief from Agent 9 which is complete and well-formed.
+            $v2output = $case->outputs()->where('filename', '09_final_brief_v2.md')->first();
+            $v2content = '';
+            if ($v2output) {
+                $v2content = (string) ($v2output->content ?? '');
+                if (empty(trim($v2content)) && $v2output->file_path) {
+                    $full = Storage::disk('local')->path($v2output->file_path);
+                    if (file_exists($full)) {
+                        $v2content = file_get_contents($full);
+                    }
+                }
+            }
+            $v3Len = mb_strlen(trim($content));
+            $v2Len = mb_strlen(trim($v2content));
+            if ($v3Len < 800 || ($v2Len > 800 && $v2Len > $v3Len * 1.15)) {
+                Log::warning('13_final_brief_v3.md degraded or too short — falling back to 09_final_brief_v2.md', [
                     'case_id'   => $case->id,
-                    'v3_length' => mb_strlen(trim($content)),
+                    'v3_length' => $v3Len,
+                    'v2_length' => $v2Len,
                 ]);
-                $v2output = $case->outputs()->where('filename', '09_final_brief_v2.md')->first();
-                if ($v2output) {
-                    $v2content = (string) ($v2output->content ?? '');
-                    if (empty(trim($v2content)) && $v2output->file_path) {
-                        $full = Storage::disk('local')->path($v2output->file_path);
-                        if (file_exists($full)) {
-                            $v2content = file_get_contents($full);
-                        }
-                    }
-                    if (mb_strlen(trim($v2content)) >= 5000) {
-                        $content = $v2content;
-                    }
+                if ($v2Len >= 800) {
+                    $content = $v2content;
                 }
             }
 

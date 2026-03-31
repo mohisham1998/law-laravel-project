@@ -47,6 +47,7 @@ class ProcessPhase1Job implements ShouldQueue
     public function __construct(
         public LegalCase $case,
         public string $puterToken = '',
+        public string $openrouterApiKey = '',
     ) {
         $this->onQueue('default');
     }
@@ -76,7 +77,7 @@ class ProcessPhase1Job implements ShouldQueue
             $startTime = microtime(true);
             
             $promptBuilder = app(PromptBuilder::class);
-            $llmService = LLMServiceFactory::make($this->puterToken ?: null);
+            $llmService = LLMServiceFactory::make($this->puterToken ?: null, $this->openrouterApiKey ?: null);
             $agent = new Phase1AnalysisAgent($promptBuilder, $gateValidator, $llmService, $events);
 
             $result = $agent->execute($case);

@@ -60,13 +60,13 @@ class ArabicPolisherAgent extends BaseAgent
 
         $content = trim($result['content'] ?? '');
 
-        // If the response is empty or suspiciously short, keep the original v3 brief
+        // If the response is empty or suspiciously short, keep the best available brief
         if (mb_strlen($content) < 3000) {
             \Illuminate\Support\Facades\Log::warning(
-                'ArabicPolisherAgent: response too short, using original v3 brief',
+                'ArabicPolisherAgent: response too short, using best available brief',
                 ['case_id' => $case->id, 'length' => mb_strlen($content)]
             );
-            $content = $this->getV3Content($case) ?? $content;
+            $content = $this->getBestBriefContent($case);
         }
 
         $this->saveOutput($case, '14_final_brief_polished.md', $content);
@@ -81,30 +81,34 @@ class ArabicPolisherAgent extends BaseAgent
     }
 
     /**
-     * Build the polishing prompt from the v3 brief context.
+     * Build the polishing + completion prompt from the v3 brief context.
      */
     protected function buildPolishPrompt(string $context): string
     {
         return <<<PROMPT
 ## المهمة
 
-أنت مدقق لغوي قانوني. المذكرة القانونية أدناه أعدّها فريق وكلاء الذكاء الاصطناعي. مهمتك تصحيح اللغة وإتمام المعلومات المنقوصة دون تغيير الحجج القانونية.
+أنت مدقق لغوي قانوني ومكمّل للمذكرات القضائية. المذكرة القانونية أدناه أعدّها فريق وكلاء الذكاء الاصطناعي. مهمتك تصحيح اللغة، وإتمام الأقسام الناقصة، وإضافة الملاحق المطلوبة بناءً على بيانات القضية المقدمة في السياق.
 
-## تعليمات التصحيح الإلزامية:
+## تعليمات الإتمام الإلزامية:
 
-١. **التواريخ المنقوصة**: أكمل أي تاريخ ناقص المكونات (مثال: "١٤٤٤/٣" تصبح "١٤٤٤/٣/١٥ هـ" أو ما يناسب السياق).
-٢. **الكلمات الإنجليزية**: أزل أي كلمات أو رموز إنجليزية تسربت للنص واستبدلها بالعربية الصحيحة. مثال: "Agent" → "الوكيل"، "output" → "المخرج".
-٣. **الأخطاء النحوية**: صحح أخطاء المطابقة (الفعل مع الفاعل، التذكير والتأنيث، التنوين).
-٤. **مخاطبة المحكمة**: تأكد من وجود العبارة الصحيحة "إلى فضيلة رئيس المحكمة..." أو ما يناسب في مطلع المذكرة.
-٥. **التوقيع والختام**: تأكد من وجود اسم المحامي وتاريخ التوقيع والمحكمة في نهاية المذكرة بشكل مكتمل.
-٦. **الطلبات الثلاث**: تأكد من وجود الطلبات الأصلية والاحتياطية والتبعية. إذا كانت ناقصة فأكملها بما يتناسب مع الحجج القانونية الواردة.
-٧. **البسملة**: تأكد أن المذكرة تبدأ بـ "بسم الله الرحمن الرحيم" كسطر أول.
+١. **البسملة**: تأكد أن المذكرة تبدأ بـ "بسم الله الرحمن الرحيم" كسطر أول.
+٢. **مخاطبة المحكمة**: تأكد من وجود "إلى أصحاب الفضيلة قضاة [اسم المحكمة]" في المطلع.
+٣. **بيانات الأطراف**: تأكد من وجود اسم المدعي والمدعى عليه ووكيل الدفاع ورقم الترخيص كاملاً.
+٤. **التواريخ المنقوصة**: أكمل أي تاريخ ناقص المكونات بالكلمات الهجرية الكاملة.
+٥. **الكلمات الإنجليزية**: أزل أي كلمات أو رموز إنجليزية تسربت للنص واستبدلها بالعربية الصحيحة.
+٦. **الأخطاء النحوية**: صحح أخطاء المطابقة (الفعل مع الفاعل، التذكير والتأنيث، التنوين).
+٧. **الطلبات الثلاث**: تأكد من وجود الطلبات الأصلية والاحتياطية والتبعية مفصّلةً. إذا كانت ناقصة فأكملها بما يتناسب مع الحجج القانونية الواردة.
+٨. **التوقيع والختام**: تأكد من وجود اسم المحامي ورقم الترخيص في نهاية المذكرة.
+٩. **ملحق ١ — مسرد الوقائع الزمني (إلزامي)**: إذا لم يكن الملحق موجوداً في المذكرة، أضفه بناءً على الوقائع الزمنية الواردة في السياق. رتّب الوقائع تصاعدياً مع التواريخ الهجرية بالكلمات الكاملة.
+١٠. **ملحق ٢ — المواد النظامية المستشهد بها (إلزامي)**: إذا لم يكن الملحق موجوداً في المذكرة، أضفه مع نص كل مادة نظامية مستشهدٍ بها كاملاً. استخدم نصوص المواد المقدمة في السياق.
 
 ## قيود مطلقة:
 
-- لا تضف حججاً قانونية جديدة ولا تحذف حججاً قائمة.
-- لا تغيّر أرقام المواد النظامية أو نصوصها.
-- لا تكتب أي تعليق أو ملاحظة — أنتج نص المذكرة المصحح فحسب.
+- لا تحذف أي حجة قانونية قائمة ولا تغيّر أرقام المواد أو نصوصها.
+- لا تكتب أي تعليق أو ملاحظة خارج نص المذكرة — أنتج نص المذكرة المكتملة فحسب.
+- لا تستخدم جداول Markdown — القوائم المرقمة أو النثر فقط.
+- جميع التواريخ بالكلمات العربية الهجرية الكاملة.
 
 ---
 
@@ -113,25 +117,89 @@ PROMPT;
     }
 
     /**
-     * Build context: only needs the final brief v3 from Agent 12.
+     * Build context: the best available brief + timeline + statutes for appendix generation.
      */
     protected function buildContext(LegalCase $case): string
     {
-        $v3Content = $this->getV3Content($case);
+        // Get best available brief (pick longest among v3, v2)
+        $briefContent = $this->getBestBriefContent($case);
 
-        if ($v3Content === null) {
-            // Fallback to v2 if v3 not available
-            $output = $case->outputs()->where('filename', '09_final_brief_v2.md')->first();
-            if ($output) {
-                $v3Content = (string) ($output->content ?? '');
-                if (empty(trim($v3Content)) && $output->file_path) {
-                    $full = Storage::disk('local')->path($output->file_path);
-                    $v3Content = file_exists($full) ? file_get_contents($full) : '';
-                }
+        $parts = [];
+        $parts[] = "## المذكرة القانونية (للتصحيح والإتمام)\n\n" . $briefContent;
+
+        // Include timeline for appendix 1
+        $this->appendFileContent($case, '04_timeline.md', '## الجدول الزمني للوقائع (للملحق ١)', 8000, $parts);
+
+        // Include statutes index for appendix 2 (JSONL — take first 6000 chars)
+        $this->appendFileContent($case, '03_statutes_index.jsonl', '## فهرس المواد النظامية (للملحق ٢)', 6000, $parts);
+
+        // Include entities index for party names
+        $this->appendFileContent($case, '04_entities_index.md', '## فهرس الكيانات (أسماء الأطراف والأشخاص)', 3000, $parts);
+
+        return implode("\n\n---\n\n", $parts);
+    }
+
+    /**
+     * Get the best (longest) brief content from v3 or v2.
+     */
+    private function getBestBriefContent(LegalCase $case): string
+    {
+        $v3Content = $this->getV3Content($case) ?? '';
+        $v2Content = '';
+
+        $v2output = $case->outputs()->where('filename', '09_final_brief_v2.md')->first();
+        if ($v2output) {
+            $v2Content = (string) ($v2output->content ?? '');
+            if (empty(trim($v2Content)) && $v2output->file_path) {
+                $full = Storage::disk('local')->path($v2output->file_path);
+                $v2Content = file_exists($full) ? file_get_contents($full) : '';
             }
         }
 
-        return $v3Content ?? $case->intake_text ?? '';
+        // Also check v1 (Agent 8 original)
+        $v1Content = '';
+        $v1output = $case->outputs()->where('filename', '08_final_brief.md')->first();
+        if ($v1output) {
+            $v1Content = (string) ($v1output->content ?? '');
+            if (empty(trim($v1Content)) && $v1output->file_path) {
+                $full = Storage::disk('local')->path($v1output->file_path);
+                $v1Content = file_exists($full) ? file_get_contents($full) : '';
+            }
+        }
+
+        // Pick the longest
+        $best = $v3Content;
+        if (mb_strlen(trim($v2Content)) > mb_strlen(trim($best)) * 1.10) {
+            $best = $v2Content;
+        }
+        if (mb_strlen(trim($v1Content)) > mb_strlen(trim($best)) * 1.10) {
+            $best = $v1Content;
+        }
+
+        return $best ?: $case->intake_text ?? '';
+    }
+
+    /**
+     * Append file content from a case output to the context parts array.
+     */
+    private function appendFileContent(LegalCase $case, string $filename, string $label, int $maxChars, array &$parts): void
+    {
+        $output = $case->outputs()->where('filename', $filename)->first();
+        if (!$output) {
+            return;
+        }
+        $content = (string) ($output->content ?? '');
+        if (empty(trim($content)) && $output->file_path) {
+            $full = Storage::disk('local')->path($output->file_path);
+            $content = file_exists($full) ? file_get_contents($full) : '';
+        }
+        if (empty(trim($content))) {
+            return;
+        }
+        if (mb_strlen($content) > $maxChars) {
+            $content = mb_substr($content, 0, $maxChars) . "\n\n… [مقتطع] …";
+        }
+        $parts[] = "{$label}\n\n{$content}";
     }
 
     /**

@@ -27,6 +27,7 @@ class AgentDefinitions
             ['number' => 11, 'phase' => 3, 'name' => 'محامي الخصم', 'name_en' => "Devil's Advocate", 'outputs' => ['11_devils_advocate_notes.md'], 'inputs' => ['09_final_brief_v2.md', 'all upstream']],
             ['number' => 12, 'phase' => 3, 'name' => 'وكيل التحصين', 'name_en' => 'Fortification Agent', 'outputs' => ['12_fortification_plan.md', '13_final_brief_v3.md'], 'inputs' => ['09_final_brief_v2.md', '10_judge_notes.md', '11_devils_advocate_notes.md']],
             ['number' => 13, 'phase' => 3, 'name' => 'مدقق اللغة العربية', 'name_en' => 'Arabic Language Polisher', 'outputs' => ['14_final_brief_polished.md'], 'inputs' => ['13_final_brief_v3.md']],
+            ['number' => 14, 'phase' => 3, 'name' => 'مُحسِّن المذكرة', 'name_en' => 'Brief Enricher', 'outputs' => ['15_final_brief_enriched.md'], 'inputs' => ['14_final_brief_polished.md', '04_timeline.json', '03_statutes_index.jsonl']],
         ];
     }
 }

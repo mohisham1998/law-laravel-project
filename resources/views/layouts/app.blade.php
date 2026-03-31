@@ -39,6 +39,17 @@
         body {
             font-family: 'Cairo', sans-serif;
             background-color: #f5f8f7;
+            overflow-x: hidden;
+            scrollbar-width: none; /* Firefox */
+        }
+        body::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Edge */
+        }
+        .no-scrollbar {
+            scrollbar-width: none; /* Firefox */
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Edge */
         }
         /* RTL: dropdown arrow on the left (start) side only – no native right-side arrow */
         select.appearance-none {
@@ -113,7 +124,7 @@
         </aside>
         
         {{-- Main Content: right margin to account for fixed sidebar --}}
-        <main class="flex flex-col min-h-screen" style="margin-right: 18rem; max-width: calc(100vw - 18rem); overflow-x: hidden;">
+        <main class="flex flex-col min-h-screen no-scrollbar" style="margin-right: 18rem; max-width: calc(100vw - 18rem); overflow-x: hidden;">
             {{-- Header: extra padding/margins to avoid truncation --}}
             <header class="h-20 bg-white border-b border-primary/5 px-6 sm:px-10 lg:px-12 flex items-center justify-between gap-6 shrink-0">
                 <div class="flex-1 min-w-0 max-w-md relative" x-data="globalSearch()" @click.outside="close()">
@@ -308,27 +319,56 @@
     
     <script>
     (function() {
-        function showToast(message, type) {
+        function showToast(message, type, options) {
             type = type || 'success';
+            options = options || {};
+            var duration = (typeof options.duration !== 'undefined') ? options.duration : 4000;
+            var toastId  = options.id || ('toast-' + Date.now());
             var container = document.getElementById('toast-container');
             if (!container) return;
-            var id = 'toast-' + Date.now();
-            var bg = type === 'success' ? 'bg-primary' : 'bg-red-600';
-            var icon = type === 'success' ? 'check_circle' : 'error';
-            var html = '<div id="' + id + '" class="pointer-events-auto flex items-center gap-3 ' + bg + ' text-white px-4 py-3 rounded-xl shadow-lg animate-toast-in" role="alert">' +
-                '<span class="material-symbols-outlined">' + icon + '</span>' +
-                '<span class="flex-1 text-sm font-medium">' + (message || '') + '</span>' +
+            // Remove existing toast with same id (replace)
+            var existing = document.getElementById(toastId);
+            if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+
+            var bg, icon;
+            if (type === 'success') { bg = 'bg-primary';    icon = 'check_circle'; }
+            else if (type === 'info') { bg = 'bg-amber-500'; icon = 'info'; }
+            else                      { bg = 'bg-red-600';   icon = 'error'; }
+
+            // Persistent toasts (duration===0) get a dismiss (×) button
+            var closeBtn = (duration === 0)
+                ? '<button onclick="dismissToast(\'' + toastId + '\')" class="pointer-events-auto ml-1 opacity-70 hover:opacity-100 text-white leading-none text-lg font-bold" aria-label="إغلاق">×</button>'
+                : '';
+
+            var html = '<div id="' + toastId + '" class="pointer-events-auto flex items-start gap-3 ' + bg + ' text-white px-4 py-3 rounded-xl shadow-lg animate-toast-in max-w-sm" role="alert" dir="rtl">' +
+                '<span class="material-symbols-outlined text-xl mt-0.5 flex-shrink-0">' + icon + '</span>' +
+                '<span class="flex-1 text-sm font-medium leading-relaxed">' + (message || '') + '</span>' +
+                closeBtn +
                 '</div>';
             container.insertAdjacentHTML('beforeend', html);
-            var el = document.getElementById(id);
-            setTimeout(function() {
-                if (el) {
-                    el.classList.add('animate-toast-out');
-                    setTimeout(function() { if (el && el.parentNode) el.parentNode.removeChild(el); }, 300);
-                }
-            }, 4000);
+
+            if (duration > 0) {
+                var el = document.getElementById(toastId);
+                setTimeout(function() {
+                    if (el) {
+                        el.classList.add('animate-toast-out');
+                        setTimeout(function() { if (el && el.parentNode) el.parentNode.removeChild(el); }, 300);
+                    }
+                }, duration);
+            }
+            return toastId;
         }
-        window.showToast = showToast;
+
+        function dismissToast(id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.classList.add('animate-toast-out');
+                setTimeout(function() { if (el && el.parentNode) el.parentNode.removeChild(el); }, 300);
+            }
+        }
+
+        window.showToast   = showToast;
+        window.dismissToast = dismissToast;
         @if (session('success'))
         document.addEventListener('DOMContentLoaded', function() { showToast({!! \Illuminate\Support\Js::from(session('success')) !!}, 'success'); });
         @endif

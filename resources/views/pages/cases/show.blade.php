@@ -16,6 +16,12 @@
         <p class="font-medium text-red-800">{{ session('error') }}</p>
     </div>
 @endif
+@if(session('info'))
+    <div class="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200 flex items-center gap-3">
+        <span class="material-symbols-outlined text-blue-600">info</span>
+        <p class="font-medium text-blue-800">{{ session('info') }}</p>
+    </div>
+@endif
 {{-- Breadcrumb: back on the left, current page on the right (no duplicate arrow) --}}
 <div class="flex justify-between items-center mb-6">
     <a href="{{ route('cases.index') }}" class="flex items-center gap-1.5 text-sm text-slate-600 hover:text-primary transition-colors" title="العودة للقضايا">
@@ -334,6 +340,26 @@
 
 {{-- Model Config Drawer --}}
 @include('components.agent-model-config', ['case' => $case])
+
+{{-- Inject final brief for the output modal (server-composed, post-processed) --}}
+@php
+$finalBriefMd = null;
+if (in_array($statusVal, ['phase3_completed', 'completed_with_warnings'])) {
+    try {
+        $finalBriefMd = \App\Services\Output\FinalArabicBriefComposer::compose($case);
+    } catch (\Throwable $e) {
+        $finalBriefMd = null;
+    }
+}
+@endphp
+<script>
+window.finalBriefContent  = @json($finalBriefMd ?? '');
+window.finalBriefAutoOpen = {{ json_encode(!empty($finalBriefMd)) }};
+window.caseTitle          = @json($case->title ?? 'مذكرة قانونية');
+</script>
+
+{{-- Case Output Modal (Markdown results viewer) --}}
+@include('components.case-output-modal', ['case' => $case])
 
 {{-- No auto-reload - SSE provides real-time updates without page refresh --}}
 @push('scripts')

@@ -644,10 +644,16 @@ function startSSE() {
                     if (data.status === 'phase2_completed') {
                         autoLaunchPhase3();
                     }
-                    // Activate PDF export button when pipeline fully done
+                    // Show model-quality note when Phase 3 starts generating
+                    if (data.status === 'phase3_processing') {
+                        showModelQualityToast();
+                    }
+                    // Activate output button and open results modal when pipeline fully done
                     if (data.status === 'phase3_completed' || data.status === 'completed_with_warnings') {
-                        activatePdfExportButton();
+                        if (typeof activateOutputButton === 'function') activateOutputButton();
+                        if (typeof openOutputModal === 'function') openOutputModal();
                         hidePhase3Banner();
+                        showModelReadyToast();
                     }
                     break;
 
@@ -1244,3 +1250,48 @@ function resetSystemMessage() {
         </div>
     </div>
 </div>
+
+<script>
+// ── Model-Quality Toast Functions ────────────────────────────────────────────
+
+var _modelQualityToastId = 'toast-model-quality';
+
+/**
+ * Shown while Phase 3 is actively generating the brief.
+ * Persistent (no auto-dismiss) — user can close it manually.
+ */
+function showModelQualityToast() {
+    if (typeof window.showToast !== 'function') return;
+    window.showToast(
+        'جارٍ صياغة المذكرة القانونية... النموذج المستخدم مناسب للاستخدام الأساسي، وقد يكون المحتوى مختصراً. يمكنك اختيار نموذج أفضل من إعدادات القضية.',
+        'info',
+        { duration: 0, id: _modelQualityToastId }
+    );
+}
+
+/**
+ * Shown once when the brief is fully ready.
+ * Auto-dismisses after 5 seconds, then removes the generation toast too.
+ */
+function showModelReadyToast() {
+    // Dismiss the generation toast first
+    if (typeof window.dismissToast === 'function') window.dismissToast(_modelQualityToastId);
+
+    if (typeof window.showToast !== 'function') return;
+    window.showToast(
+        'تمّت صياغة المذكرة القانونية بنجاح! للحصول على مذكرة أكثر تفصيلاً، يمكنك اختيار نموذج أقوى من إعدادات القضية.',
+        'success',
+        { duration: 5000 }
+    );
+}
+
+// Show quality note on page load if Phase 3 is already in progress
+(function() {
+    var status = '{{ $case->status->value ?? $case->status }}';
+    if (status === 'phase3_processing') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(showModelQualityToast, 800);
+        });
+    }
+})();
+</script>

@@ -198,6 +198,48 @@ $notificationsEnabled = $notificationsEnabled ?? true;
         </div>
     </div>
 
+    {{-- OpenRouter API Key Section (shown when OpenRouter selected) --}}
+    <div x-show="provider === 'openrouter'" x-transition class="bg-white p-6 rounded-xl border border-primary/10 shadow-sm mb-6">
+        <h3 class="font-bold mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">key</span>
+            مفتاح OpenRouter API
+        </h3>
+        <div class="space-y-3">
+            <div class="flex gap-2 items-center">
+                <div class="relative flex-1">
+                    <input
+                        type="password"
+                        name="openrouter_api_key"
+                        id="openrouterApiKeyInput"
+                        value="{{ $openrouterApiKey ?? '' }}"
+                        placeholder="...sk-or-v1"
+                        autocomplete="off"
+                        class="w-full pr-4 pl-10 py-3 bg-background-light border-none rounded-xl focus:ring-2 focus:ring-primary font-mono text-sm"
+                        dir="rtl"
+                        x-ref="apiKeyInput"
+                    >
+                    <button type="button"
+                        @click="$refs.apiKeyInput.type = $refs.apiKeyInput.type === 'password' ? 'text' : 'password'"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined text-lg">visibility</span>
+                    </button>
+                </div>
+                <button type="button" id="checkApiKeyBtn"
+                    @click="checkApiKey()"
+                    class="flex items-center gap-2 bg-primary/10 text-primary font-bold px-4 py-3 rounded-xl hover:bg-primary/20 transition-colors text-sm whitespace-nowrap shrink-0">
+                    <span class="material-symbols-outlined text-base" id="checkApiKeyIcon">wifi_tethering</span>
+                    <span id="checkApiKeyText">اختبار الاتصال</span>
+                </button>
+            </div>
+            <div id="apiKeyCheckResult" class="hidden p-3 rounded-xl text-sm"></div>
+            <p class="text-xs text-slate-500">
+                أدخل مفتاح API الخاص بك من
+                <a href="https://openrouter.ai/keys" target="_blank" class="text-primary hover:underline">openrouter.ai/keys</a>.
+                يُخزَّن بشكل مشفر ويُستخدم لجميع طلبات الذكاء الاصطناعي.
+            </p>
+        </div>
+    </div>
+
     {{-- Puter Section (shown when Puter selected) --}}
     <div x-show="provider === 'puter'" x-transition class="bg-white p-6 rounded-xl border border-primary/10 shadow-sm mb-6 space-y-5">
 
@@ -548,6 +590,60 @@ document.addEventListener('alpine:init', function () {
                     document.getElementById('puterTokenField').value = this.getPuterToken();
                 }
                 this.$el.submit();
+            },
+            async checkApiKey() {
+                const key = document.getElementById('openrouterApiKeyInput').value.trim();
+                const resultEl = document.getElementById('apiKeyCheckResult');
+                const btn = document.getElementById('checkApiKeyBtn');
+                const icon = document.getElementById('checkApiKeyIcon');
+                const text = document.getElementById('checkApiKeyText');
+
+                if (!key) {
+                    resultEl.className = 'p-3 rounded-xl text-sm bg-amber-50 border border-amber-200 text-amber-700';
+                    resultEl.textContent = 'يرجى إدخال مفتاح API أولاً.';
+                    resultEl.classList.remove('hidden');
+                    return;
+                }
+
+                btn.disabled = true;
+                icon.textContent = 'sync';
+                icon.classList.add('animate-spin');
+                text.textContent = 'جارٍ الاختبار...';
+                resultEl.classList.add('hidden');
+
+                try {
+                    const resp = await fetch('{{ route('settings.check-openrouter') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ api_key: key }),
+                    });
+                    const data = await resp.json();
+
+                    if (data.ok) {
+                        resultEl.className = 'p-3 rounded-xl text-sm bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center gap-2';
+                        resultEl.innerHTML = '<span class="material-symbols-outlined text-base">check_circle</span><span>المفتاح صالح — الرصيد المتبقي: $' + (data.remaining_display ?? data.remaining ?? '?') + '</span>';
+                        icon.textContent = 'check_circle';
+                        icon.classList.remove('animate-spin');
+                        icon.classList.add('text-emerald-600');
+                    } else {
+                        resultEl.className = 'p-3 rounded-xl text-sm bg-red-50 border border-red-200 text-red-700 flex items-center gap-2';
+                        resultEl.innerHTML = '<span class="material-symbols-outlined text-base">error</span><span>' + (data.message ?? 'المفتاح غير صالح أو منتهي.') + '</span>';
+                        icon.textContent = 'wifi_off';
+                        icon.classList.remove('animate-spin');
+                    }
+                } catch (e) {
+                    resultEl.className = 'p-3 rounded-xl text-sm bg-red-50 border border-red-200 text-red-700';
+                    resultEl.textContent = 'تعذّر الاتصال بالخادم.';
+                    icon.textContent = 'wifi_off';
+                    icon.classList.remove('animate-spin');
+                } finally {
+                    btn.disabled = false;
+                    text.textContent = 'اختبار الاتصال';
+                }
             }
         };
     });

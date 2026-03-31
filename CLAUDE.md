@@ -68,6 +68,8 @@ php artisan db:seed        # Seed law library
 - SQLite (dev) / MySQL (prod) — no schema changes needed (009-pipeline-output-quality)
 - PHP 8.x / Laravel 11 + PromptBuilder (custom), OpenRouter API (Guzzle), Playwright (Node.js, MCP) (010-arabic-output-quality)
 - Local disk — `storage/app/cases/{id}/outputs/` (case outputs), SQLite (dev) (010-arabic-output-quality)
+- PHP 8.x / Laravel 11 + Blade, Alpine.js, Tailwind CSS (CDN), marked.js (CDN — lightweight Markdown renderer, no build step) (011-formatted-output-modal)
+- SQLite (dev) — no schema changes required (011-formatted-output-modal)
 
 ## Recent Changes
 - 001-legal-counsel-system: Added PHP 8.x / Laravel 11 + Livewire, Alpine.js, Tailwind CSS, Guzzle HTTP, OpenRouter API

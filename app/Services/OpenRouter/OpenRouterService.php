@@ -15,12 +15,12 @@ class OpenRouterService implements LLMServiceInterface
     ) {
     }
 
-    public static function fromConfig(): self
+    public static function fromConfig(?string $apiKey = null): self
     {
         $config = config('openrouter');
         $client = new OpenRouterClient(
             new Client(['timeout' => $config['timeout'] ?? 300]),
-            $config['api_key'],
+            $apiKey ?: $config['api_key'],
             rtrim($config['base_url'], '/'),
             $config['timeout'] ?? 300,
         );

@@ -41,7 +41,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Build frontend (Tailwind/Vite need vendor and app for content paths)
-RUN npm ci && npm run build && apk del nodejs npm
+RUN npm ci --ignore-scripts && npm run build && apk del nodejs npm
 
 # Final stage
 FROM base AS production

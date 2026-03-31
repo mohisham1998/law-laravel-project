@@ -52,6 +52,7 @@ class ProcessPhase2Job implements ShouldQueue, ShouldBeUnique
     public function __construct(
         public LegalCase $case,
         public string $puterToken = '',
+        public string $openrouterApiKey = '',
     ) {
         $pipelineTimeoutMinutes = (int) config('legal.pipeline_timeout_minutes', 30);
         $this->timeout  = max(600, ($pipelineTimeoutMinutes * 60) + 120);
@@ -70,7 +71,7 @@ class ProcessPhase2Job implements ShouldQueue, ShouldBeUnique
     public function handle(): void
     {
         // Bind correct LLM service before the orchestrator (and its Phase2 agents) are constructed
-        $llmService = LLMServiceFactory::make($this->puterToken ?: null);
+        $llmService = LLMServiceFactory::make($this->puterToken ?: null, $this->openrouterApiKey ?: null);
         app()->bind(LLMServiceInterface::class, fn () => $llmService);
 
         $orchestrator = app(LegalOrchestrator::class);
@@ -90,7 +91,7 @@ class ProcessPhase2Job implements ShouldQueue, ShouldBeUnique
 
             app(CaseEventService::class)->emitStatusChanged($case->id, (string) $oldStatus, CaseStatus::Phase2Processing->value);
 
-            $orchestrator->runPhase2($case, $case->resume_from_agent);
+            $orchestrator->runPhase2($case, $case->resume_from_agent, $this->openrouterApiKey);
         } catch (\Throwable $e) {
             // Store the actual error message for user display BEFORE throwing
             // (queue retries would overwrite this with generic message)
