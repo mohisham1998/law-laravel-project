@@ -1,26 +1,11 @@
 @if ($paginator->hasPages())
 <nav dir="rtl" role="navigation" aria-label="Pagination"
-     class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+     class="flex flex-col items-center gap-3 w-full">
 
-    {{-- RIGHT side (RTL start): results summary --}}
-    <p class="text-sm text-slate-500">
-        @if ($paginator->firstItem())
-            عرض
-            <span class="font-semibold text-slate-700">{{ number_format($paginator->firstItem()) }}</span>
-            –
-            <span class="font-semibold text-slate-700">{{ number_format($paginator->lastItem()) }}</span>
-            من إجمالي
-            <span class="font-semibold text-slate-700">{{ number_format($paginator->total()) }}</span>
-            نتيجة
-        @else
-            {{ number_format($paginator->count()) }} نتيجة
-        @endif
-    </p>
-
-    {{-- LEFT side (RTL end): page buttons --}}
+    {{-- TOP: page number buttons (centered) --}}
     <div class="flex items-center gap-1">
 
-        {{-- Previous page: chevron pointing RIGHT (→) navigates toward page 1 in RTL --}}
+        {{-- Previous (→ in RTL = toward page 1) --}}
         @if ($paginator->onFirstPage())
             <span aria-disabled="true"
                   class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-300 bg-slate-50 cursor-not-allowed select-none">
@@ -37,7 +22,7 @@
         {{-- Page numbers --}}
         @foreach ($elements as $element)
             @if (is_string($element))
-                <span class="inline-flex items-center justify-center w-9 h-9 text-sm text-slate-400 select-none tracking-widest">···</span>
+                <span class="inline-flex items-center justify-center w-9 h-9 text-sm text-slate-400 select-none">···</span>
             @endif
             @if (is_array($element))
                 @foreach ($element as $page => $url)
@@ -57,7 +42,7 @@
             @endif
         @endforeach
 
-        {{-- Next page: chevron pointing LEFT (←) navigates toward last page in RTL --}}
+        {{-- Next (← in RTL = toward last page) --}}
         @if ($paginator->hasMorePages())
             <a href="{{ $paginator->nextPageUrl() }}" rel="next"
                class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors duration-150 cursor-pointer"
@@ -72,5 +57,21 @@
         @endif
 
     </div>
+
+    {{-- BOTTOM: results summary (centered) --}}
+    <p class="text-sm text-slate-500 text-center">
+        @if ($paginator->firstItem())
+            عرض
+            <span class="font-semibold text-slate-700">{{ number_format($paginator->firstItem()) }}</span>
+            –
+            <span class="font-semibold text-slate-700">{{ number_format($paginator->lastItem()) }}</span>
+            من إجمالي
+            <span class="font-semibold text-slate-700">{{ number_format($paginator->total()) }}</span>
+            نتيجة
+        @else
+            {{ number_format($paginator->count()) }} نتيجة
+        @endif
+    </p>
+
 </nav>
 @endif
