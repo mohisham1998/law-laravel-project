@@ -1,8 +1,9 @@
 @if ($paginator->hasPages())
-<nav dir="rtl" role="navigation" aria-label="Pagination" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+<nav dir="rtl" role="navigation" aria-label="Pagination"
+     class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
 
-    {{-- Results summary --}}
-    <p class="text-sm text-slate-500 order-2 sm:order-1">
+    {{-- RIGHT side (RTL start): results summary --}}
+    <p class="text-sm text-slate-500">
         @if ($paginator->firstItem())
             عرض
             <span class="font-semibold text-slate-700">{{ number_format($paginator->firstItem()) }}</span>
@@ -16,32 +17,33 @@
         @endif
     </p>
 
-    {{-- Page buttons --}}
-    <div class="flex items-center gap-1 order-1 sm:order-2">
+    {{-- LEFT side (RTL end): page buttons --}}
+    <div class="flex items-center gap-1">
 
-        {{-- Previous (→ in RTL = go to earlier page) --}}
+        {{-- Previous page: chevron pointing RIGHT (→) navigates toward page 1 in RTL --}}
         @if ($paginator->onFirstPage())
-            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50" aria-disabled="true">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><polyline points="9 18 15 12 9 6"/></svg>
+            <span aria-disabled="true"
+                  class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-300 bg-slate-50 cursor-not-allowed select-none">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4"><polyline points="9 18 15 12 9 6"/></svg>
             </span>
         @else
             <a href="{{ $paginator->previousPageUrl() }}" rel="prev"
-               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-600 hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors duration-150 cursor-pointer"
+               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors duration-150 cursor-pointer"
                aria-label="{{ __('pagination.previous') }}">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4"><polyline points="9 18 15 12 9 6"/></svg>
             </a>
         @endif
 
         {{-- Page numbers --}}
         @foreach ($elements as $element)
             @if (is_string($element))
-                <span class="inline-flex items-center justify-center w-9 h-9 text-sm text-slate-400 select-none">…</span>
+                <span class="inline-flex items-center justify-center w-9 h-9 text-sm text-slate-400 select-none tracking-widest">···</span>
             @endif
             @if (is_array($element))
                 @foreach ($element as $page => $url)
                     @if ($page == $paginator->currentPage())
                         <span aria-current="page"
-                              class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-sm font-bold text-white bg-primary border border-primary shadow-sm shadow-primary/20">
+                              class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-sm font-bold text-white bg-primary border border-primary shadow-sm shadow-primary/20 select-none">
                             {{ $page }}
                         </span>
                     @else
@@ -55,16 +57,17 @@
             @endif
         @endforeach
 
-        {{-- Next (← in RTL = go to later page) --}}
+        {{-- Next page: chevron pointing LEFT (←) navigates toward last page in RTL --}}
         @if ($paginator->hasMorePages())
             <a href="{{ $paginator->nextPageUrl() }}" rel="next"
-               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-600 hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors duration-150 cursor-pointer"
+               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors duration-150 cursor-pointer"
                aria-label="{{ __('pagination.next') }}">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
             </a>
         @else
-            <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-300 cursor-not-allowed bg-slate-50" aria-disabled="true">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
+            <span aria-disabled="true"
+                  class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 text-slate-300 bg-slate-50 cursor-not-allowed select-none">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4"><polyline points="15 18 9 12 15 6"/></svg>
             </span>
         @endif
 
