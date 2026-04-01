@@ -15,14 +15,38 @@ class LawLibraryController extends Controller
         protected LawProcessingService $processingService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $laws = LawRegistry::withCount(['files', 'articles'])
-            ->with(['files' => fn($q) => $q->latest()])
-            ->latest()
-            ->paginate(20);
+        $query = LawRegistry::withCount(['files', 'articles'])
+            ->latest();
 
-        return view('pages.law-library.index', compact('laws'));
+        if ($search = $request->input('search')) {
+            $query->where('name', 'like', '%' . $search . '%');
+        }
+
+        if ($category = $request->input('category')) {
+            $query->where('category', $category);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        $laws = $query->paginate(50)->withQueryString();
+
+        $categories = LawRegistry::select('category')
+            ->whereNotNull('category')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
+
+        $stats = [
+            'total'    => LawRegistry::count(),
+            'active'   => LawRegistry::where('status', 'active')->count(),
+            'articles' => \App\Models\LawArticle::count(),
+        ];
+
+        return view('pages.law-library.index', compact('laws', 'categories', 'stats'));
     }
 
     public function create()

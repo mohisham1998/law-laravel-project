@@ -113,7 +113,7 @@
                     <div class="flex-1 min-w-0">
                         <h4 class="font-bold text-sm truncate">{{ $file->filename }}</h4>
                         <div class="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                            <span>{{ $file->getHumanReadableSize() }}</span>
+                            <span>{{ $file->human_readable_size }}</span>
                             <span>•</span>
                             <span>{{ $file->created_at->diffForHumans() }}</span>
                             @if($file->processing_status === 'completed')

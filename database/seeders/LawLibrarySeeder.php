@@ -74,12 +74,24 @@ class LawLibrarySeeder extends Seeder
                 continue;
             }
 
+            // Determine status from the الحالة: field in the file header
+            $fileContent = File::get($file->getPathname());
+            $arabicStatus = '';
+            if (preg_match('/^الحالة:\s*(.+)$/um', $fileContent, $statusMatch)) {
+                $arabicStatus = trim($statusMatch[1]);
+            }
+            $mappedStatus = match ($arabicStatus) {
+                'ساري'  => 'active',
+                'لاغي'  => 'abrogated',
+                default => 'draft',
+            };
+
             $law = LawRegistry::create([
                 'name' => $lawData['name'],
                 'description' => $lawData['description'],
                 'category' => $lawData['category'],
                 'effective_year' => $lawData['effective_year'],
-                'status' => 'active',
+                'status' => $mappedStatus,
             ]);
 
             $storagePath = "law_library/{$law->id}/{$filename}";

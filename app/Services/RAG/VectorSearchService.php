@@ -4,6 +4,7 @@ namespace App\Services\RAG;
 
 use App\Models\LawArticle;
 use App\Models\LawEmbedding;
+use App\Models\LawSearchCache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -14,11 +15,50 @@ class VectorSearchService
     ) {}
 
     /**
-     * Search for relevant law articles using semantic search
+     * Search for relevant law articles using semantic search.
+     * Only searches active (non-abrogated) laws. Results are cached for 30 minutes.
      */
     public function search(string $query, int $topK = 20, float $minSimilarity = 0.70): array
     {
-        // Generate embedding for query
+        // --- Cache lookup ---
+        $cacheKey = hash('sha256', $query . '|' . $topK . '|' . $minSimilarity);
+        $cacheTtlMinutes = 30;
+
+        $cached = LawSearchCache::where('query_hash', $cacheKey)
+            ->where('last_accessed_at', '>', now()->subMinutes($cacheTtlMinutes))
+            ->first();
+
+        if ($cached) {
+            $articleIds = $cached->result_article_ids ?? [];
+            $scores     = $cached->result_scores ?? [];
+
+            if (!empty($articleIds)) {
+                $articlesById = LawArticle::with(['lawRegistry', 'lawFile'])
+                    ->whereIn('id', $articleIds)
+                    ->get()
+                    ->keyBy('id');
+
+                $results = [];
+                foreach ($articleIds as $i => $id) {
+                    if ($articlesById->has($id)) {
+                        $sim = (float) ($scores[$i] ?? 0.0);
+                        $results[] = [
+                            'article'    => $articlesById[$id],
+                            'similarity' => $sim,
+                            'confidence' => $sim,
+                        ];
+                    }
+                }
+
+                // Update cache hit stats
+                $cached->increment('hit_count');
+                $cached->update(['last_accessed_at' => now()]);
+
+                return $results;
+            }
+        }
+
+        // --- Generate embedding for query ---
         $queryEmbeddingData = $this->embeddingService->generateEmbedding($query);
         $queryVector = $queryEmbeddingData['embedding'];
 
@@ -27,8 +67,10 @@ class VectorSearchService
             return [];
         }
 
-        // Get all embeddings from database
-        $embeddings = LawEmbedding::with(['lawArticle.lawRegistry', 'lawArticle.lawFile'])->get();
+        // --- Load embeddings for active laws only ---
+        $embeddings = LawEmbedding::whereHas('lawArticle.lawRegistry', function ($q) {
+            $q->where('status', 'active');
+        })->with(['lawArticle.lawRegistry', 'lawArticle.lawFile'])->get();
 
         if ($embeddings->isEmpty()) {
             Log::warning('No law embeddings found in database');
@@ -40,7 +82,7 @@ class VectorSearchService
 
         foreach ($embeddings as $embedding) {
             $articleVector = $embedding->getVectorArray();
-            
+
             if (empty($articleVector)) {
                 // Skip embeddings that failed to load (corrupted/empty)
                 $failedCount++;
@@ -49,10 +91,10 @@ class VectorSearchService
 
             try {
                 $similarity = LawEmbedding::cosineSimilarity($queryVector, $articleVector);
-                
+
                 if ($similarity >= $minSimilarity) {
                     $results[] = [
-                        'article' => $embedding->lawArticle,
+                        'article'    => $embedding->lawArticle,
                         'similarity' => $similarity,
                         'confidence' => $similarity,
                     ];
@@ -61,15 +103,15 @@ class VectorSearchService
                 $failedCount++;
                 Log::error('Similarity calculation failed', [
                     'article_id' => $embedding->law_article_id,
-                    'error' => $e->getMessage(),
+                    'error'      => $e->getMessage(),
                 ]);
             }
         }
-        
+
         // Log warning if many embeddings failed
         if ($failedCount > 0) {
             Log::warning("Vector search: {$failedCount} embeddings failed to process", [
-                'query' => $query,
+                'query'            => $query,
                 'total_embeddings' => $embeddings->count(),
             ]);
         }
@@ -78,7 +120,33 @@ class VectorSearchService
         usort($results, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
 
         // Return top K results
-        return array_slice($results, 0, $topK);
+        $results = array_slice($results, 0, $topK);
+
+        // --- Persist to cache (only when results are non-empty) ---
+        if (!empty($results)) {
+            $articleIds = array_map(fn($r) => $r['article']->id, $results);
+            $scores     = array_map(fn($r) => $r['similarity'], $results);
+
+            $cacheRow = LawSearchCache::where('query_hash', $cacheKey)->first();
+            if ($cacheRow) {
+                $cacheRow->update([
+                    'result_article_ids' => $articleIds,
+                    'result_scores'      => $scores,
+                    'last_accessed_at'   => now(),
+                ]);
+            } else {
+                LawSearchCache::create([
+                    'query_hash'         => $cacheKey,
+                    'query_text'         => $query,
+                    'result_article_ids' => $articleIds,
+                    'result_scores'      => $scores,
+                    'hit_count'          => 1,
+                    'last_accessed_at'   => now(),
+                ]);
+            }
+        }
+
+        return $results;
     }
 
     /**
@@ -127,6 +195,8 @@ class VectorSearchService
 
         $embeddings = LawEmbedding::whereHas('lawArticle', function ($q) use ($lawRegistryId) {
             $q->where('law_registry_id', $lawRegistryId);
+        })->whereHas('lawArticle.lawRegistry', function ($q) {
+            $q->where('status', 'active');
         })->with(['lawArticle.lawRegistry', 'lawArticle.lawFile'])->get();
 
         $results = [];

@@ -9,6 +9,7 @@ use App\Models\LawFile;
 use App\Models\LawRegistry;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class LawProcessingService
 {
@@ -18,24 +19,58 @@ class LawProcessingService
     ) {}
 
     /**
+     * Map an Arabic status string from the law file header to the DB enum value.
+     */
+    protected function mapArabicStatus(string $arabicStatus): string
+    {
+        return match ($arabicStatus) {
+            'ساري'  => 'active',
+            'لاغي'  => 'abrogated',
+            default => 'draft',
+        };
+    }
+
+    /**
      * Process a law file: parse articles and generate embeddings
      */
     public function processLawFile(LawFile $lawFile): array
     {
         DB::beginTransaction();
-        
+
         try {
+            // Read raw file content for header parsing
+            $filePath = Storage::disk('local')->path($lawFile->file_path);
+            $content = file_exists($filePath) ? file_get_contents($filePath) : '';
+
+            // Parse header metadata and update LawRegistry accordingly
+            if (!empty($content)) {
+                $headerData = $this->parser->parseHeader($content);
+
+                $statusMapped = $this->mapArabicStatus($headerData['status']);
+
+                $existingMeta = $lawFile->lawRegistry?->metadata ?? [];
+                $newMeta = array_merge($existingMeta, array_filter([
+                    'decree_ref' => $headerData['decree_ref'],
+                    'summary'    => $headerData['summary'],
+                ]));
+
+                $lawFile->lawRegistry?->update([
+                    'status'   => $statusMapped,
+                    'metadata' => $newMeta,
+                ]);
+            }
+
             // Parse articles
             $articles = $this->parser->parseFile($lawFile);
-            
+
             if (empty($articles)) {
                 Log::warning("No articles found in {$lawFile->filename}");
                 DB::rollBack();
-                
+
                 $errorMessage = 'لم يتم العثور على أي مواد قانونية في الملف. تأكد من أن الملف يحتوي على مواد بصيغة صحيحة (مثل: "المادة الأولى" أو "١/١" أو "مادة 1")';
-                
+
                 return [
-                    'success' => false, 
+                    'success' => false,
                     'message' => $errorMessage,
                 ];
             }
@@ -52,7 +87,7 @@ class LawProcessingService
                     'end_line' => $articleData['end_line'],
                     'keywords' => $this->parser->extractKeywords($articleData['article_text']),
                 ]);
-                
+
                 $savedArticles[] = $article;
             }
 
@@ -208,7 +243,8 @@ class LawProcessingService
     }
 
     /**
-     * Prepare article text for embedding generation
+     * Prepare article text for embedding generation.
+     * Strips noise markers and enforces a 24,000-character budget (~6,000 tokens).
      */
     protected function prepareTextForEmbedding(LawArticle $article): string
     {
@@ -216,7 +252,29 @@ class LawProcessingService
         $articleNumber = $article->article_number;
         $articleText = $article->article_text;
 
-        return "{$lawName} - المادة {$articleNumber}: {$articleText}";
+        // Strip "(معدّل)" amendment suffixes
+        $articleText = preg_replace('/\s*\(معدّل\)/u', '', $articleText);
+
+        // Strip remaining bracket markers like [نص المادة] or [معدل]
+        $articleText = preg_replace('/\[[^\]]*\]/u', '', $articleText);
+
+        $articleText = trim($articleText);
+
+        $prepared = "{$lawName} - المادة {$articleNumber}: {$articleText}";
+
+        // Character budget: ~6,000 tokens ≈ 24,000 characters
+        $charBudget = 24000;
+        if (mb_strlen($prepared) > $charBudget) {
+            Log::warning('Article text exceeds embedding character budget; truncating', [
+                'article_id' => $article->id,
+                'law_name'   => $lawName,
+                'original_length' => mb_strlen($prepared),
+                'truncated_to'    => $charBudget,
+            ]);
+            $prepared = mb_substr($prepared, 0, $charBudget);
+        }
+
+        return $prepared;
     }
 
     /**
