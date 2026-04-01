@@ -17,8 +17,7 @@ class LawLibraryController extends Controller
 
     public function index(Request $request)
     {
-        $query = LawRegistry::withCount(['files', 'articles'])
-            ->latest();
+        $query = LawRegistry::withCount(['files', 'articles']);
 
         if ($search = $request->input('search')) {
             $query->where('name', 'like', '%' . $search . '%');
@@ -31,6 +30,14 @@ class LawLibraryController extends Controller
         if ($status = $request->input('status')) {
             $query->where('status', $status);
         }
+
+        $sort  = $request->input('sort', 'newest');
+        match ($sort) {
+            'oldest'   => $query->oldest(),
+            'articles' => $query->orderByDesc('articles_count'),
+            'name'     => $query->orderBy('name'),
+            default    => $query->latest(),          // newest
+        };
 
         $laws = $query->paginate(50)->withQueryString();
 

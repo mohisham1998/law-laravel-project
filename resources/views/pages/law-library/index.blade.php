@@ -34,48 +34,76 @@
 </div>
 
 {{-- Search & Filters --}}
-<form method="GET" action="{{ route('law-library.index') }}" class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6">
-    <div class="flex flex-col sm:flex-row gap-3">
-        {{-- Search --}}
-        <div class="relative flex-1">
+<form method="GET" action="{{ route('law-library.index') }}" class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-4">
+    <div class="flex flex-col gap-3">
+        {{-- Row 1: Search --}}
+        <div class="relative">
             <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4 text-slate-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </div>
             <input type="text" name="search" value="{{ request('search') }}"
-                   placeholder="ابحث باسم النظام…"
+                   placeholder="ابحث باسم النظام… (مثال: نظام العمل، نظام الإثبات)"
                    class="w-full pr-9 pl-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors bg-slate-50">
         </div>
 
-        {{-- Category Filter --}}
-        <select name="category"
-                class="px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-slate-50 cursor-pointer min-w-[160px]">
-            <option value="">كل التصنيفات</option>
-            @foreach($categories as $cat)
-                <option value="{{ $cat }}" @selected(request('category') === $cat)>{{ $cat }}</option>
-            @endforeach
-        </select>
+        {{-- Row 2: Filters + Sort + Actions --}}
+        <div class="flex flex-wrap gap-2 items-center">
+            {{-- Category --}}
+            <select name="category"
+                    class="px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white cursor-pointer">
+                <option value="">كل التصنيفات</option>
+                @foreach($categories as $cat)
+                    <option value="{{ $cat }}" @selected(request('category') === $cat)>{{ $cat }}</option>
+                @endforeach
+            </select>
 
-        {{-- Status Filter --}}
-        <select name="status"
-                class="px-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-slate-50 cursor-pointer min-w-[140px]">
-            <option value="">كل الحالات</option>
-            <option value="active" @selected(request('status') === 'active')>ساري</option>
-            <option value="abrogated" @selected(request('status') === 'abrogated')>ملغى</option>
-            <option value="draft" @selected(request('status') === 'draft')>مسودة</option>
-        </select>
+            {{-- Status --}}
+            <select name="status"
+                    class="px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white cursor-pointer">
+                <option value="">كل الحالات</option>
+                <option value="active"    @selected(request('status') === 'active')>ساري</option>
+                <option value="abrogated" @selected(request('status') === 'abrogated')>ملغى</option>
+                <option value="draft"     @selected(request('status') === 'draft')>مسودة</option>
+            </select>
 
-        <button type="submit"
-                class="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors cursor-pointer shrink-0">
-            بحث
-        </button>
+            {{-- Sort --}}
+            <select name="sort"
+                    class="px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white cursor-pointer">
+                <option value="newest"   @selected(request('sort','newest') === 'newest')>الأحدث إضافةً</option>
+                <option value="oldest"   @selected(request('sort') === 'oldest')>الأقدم إضافةً</option>
+                <option value="articles" @selected(request('sort') === 'articles')>الأكثر موادًا</option>
+                <option value="name"     @selected(request('sort') === 'name')>الاسم أبجديًا</option>
+            </select>
 
-        @if(request()->hasAny(['search', 'category', 'status']))
-            <a href="{{ route('law-library.index') }}"
-               class="px-4 py-2.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors cursor-pointer shrink-0 flex items-center gap-1.5">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                مسح
-            </a>
-        @endif
+            <button type="submit"
+                    class="px-5 py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors cursor-pointer">
+                تطبيق
+            </button>
+
+            @if(request()->hasAny(['search', 'category', 'status', 'sort']))
+                <a href="{{ route('law-library.index') }}"
+                   class="px-3 py-2 bg-slate-100 text-slate-500 rounded-lg text-sm hover:bg-slate-200 transition-colors cursor-pointer flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    مسح
+                </a>
+            @endif
+
+            {{-- Active filter chips --}}
+            @if(request('search'))
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3 h-3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    {{ request('search') }}
+                </span>
+            @endif
+            @if(request('category'))
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">{{ request('category') }}</span>
+            @endif
+            @if(request('status'))
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">
+                    {{ ['active'=>'ساري','abrogated'=>'ملغى','draft'=>'مسودة'][request('status')] ?? request('status') }}
+                </span>
+            @endif
+        </div>
     </div>
 </form>
 
@@ -104,86 +132,104 @@
             <table class="w-full text-sm" dir="rtl">
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50">
-                        <th class="text-right px-5 py-3 font-semibold text-slate-600 w-12">#</th>
-                        <th class="text-right px-5 py-3 font-semibold text-slate-600">اسم النظام</th>
-                        <th class="text-right px-4 py-3 font-semibold text-slate-600 hidden md:table-cell">التصنيف</th>
-                        <th class="text-center px-4 py-3 font-semibold text-slate-600 hidden lg:table-cell">السنة</th>
-                        <th class="text-center px-4 py-3 font-semibold text-slate-600">المواد</th>
-                        <th class="text-center px-4 py-3 font-semibold text-slate-600">الحالة</th>
-                        <th class="text-center px-4 py-3 font-semibold text-slate-600 hidden sm:table-cell">المعالجة</th>
-                        <th class="text-center px-4 py-3 font-semibold text-slate-600 w-24">إجراءات</th>
+                        <th class="text-right px-5 py-3 font-semibold text-slate-500 text-xs w-10">#</th>
+                        <th class="text-right px-5 py-3 font-semibold text-slate-500 text-xs">اسم النظام</th>
+                        <th class="text-right px-4 py-3 font-semibold text-slate-500 text-xs hidden md:table-cell">التصنيف</th>
+                        <th class="text-center px-4 py-3 font-semibold text-slate-500 text-xs hidden lg:table-cell">السنة</th>
+                        <th class="text-center px-4 py-3 font-semibold text-slate-500 text-xs">المواد</th>
+                        <th class="text-center px-4 py-3 font-semibold text-slate-500 text-xs">الحالة</th>
+                        <th class="text-right px-4 py-3 font-semibold text-slate-500 text-xs hidden xl:table-cell">تاريخ الإضافة</th>
+                        <th class="text-center px-4 py-3 font-semibold text-slate-500 text-xs w-24">إجراءات</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @foreach($laws as $index => $law)
-                        <tr class="hover:bg-slate-50/70 transition-colors group cursor-pointer"
+                        <tr class="hover:bg-slate-50/60 transition-colors duration-150 group cursor-pointer border-b border-slate-100 last:border-0"
                             onclick="window.location='{{ route('law-library.show', $law) }}'">
-                            <td class="px-5 py-3.5 text-slate-400 text-xs font-mono">
+
+                            {{-- # --}}
+                            <td class="px-5 py-3 text-slate-400 text-xs font-mono">
                                 {{ $laws->firstItem() + $loop->index }}
                             </td>
-                            <td class="px-5 py-3.5">
-                                <div class="font-semibold text-slate-900 group-hover:text-primary transition-colors leading-snug">
+
+                            {{-- Name + description --}}
+                            <td class="px-5 py-3">
+                                <div class="font-semibold text-slate-900 group-hover:text-primary transition-colors leading-snug text-sm">
                                     {{ $law->name }}
                                 </div>
                                 @if($law->description)
-                                    <div class="text-xs text-slate-400 mt-0.5 line-clamp-1 hidden sm:block">
-                                        {{ Str::limit($law->description, 80) }}
+                                    <div class="text-xs text-slate-400 mt-0.5 line-clamp-1 hidden sm:block max-w-xs">
+                                        {{ $law->description }}
                                     </div>
                                 @endif
                             </td>
-                            <td class="px-4 py-3.5 hidden md:table-cell">
+
+                            {{-- Category --}}
+                            <td class="px-4 py-3 hidden md:table-cell">
                                 @if($law->category)
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-primary/8 text-primary border border-primary/15">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
                                         {{ $law->category }}
                                     </span>
                                 @else
                                     <span class="text-slate-300 text-xs">—</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3.5 text-center hidden lg:table-cell">
-                                <span class="text-xs text-slate-500 font-medium">
+
+                            {{-- Effective year --}}
+                            <td class="px-4 py-3 text-center hidden lg:table-cell">
+                                <span class="text-xs text-slate-500 font-medium tabular-nums">
                                     {{ $law->effective_year ? $law->effective_year . ' هـ' : '—' }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3.5 text-center">
-                                <span class="inline-flex items-center justify-center min-w-[2.5rem] px-2.5 py-1 rounded-full text-sm font-black
-                                    {{ $law->articles_count > 0 ? 'text-blue-700 bg-blue-50 border border-blue-200' : 'text-slate-400 bg-slate-100' }}">
-                                    {{ number_format($law->articles_count) }}
-                                </span>
+
+                            {{-- Articles count — most important data point --}}
+                            <td class="px-4 py-3 text-center">
+                                @if($law->articles_count > 0)
+                                    <div class="inline-flex flex-col items-center">
+                                        <span class="text-base font-black text-blue-700 tabular-nums leading-none">
+                                            {{ number_format($law->articles_count) }}
+                                        </span>
+                                        <span class="text-[10px] text-slate-400 leading-none mt-0.5">مادة</span>
+                                    </div>
+                                @else
+                                    <span class="text-xs text-slate-300">—</span>
+                                @endif
                             </td>
-                            <td class="px-4 py-3.5 text-center">
+
+                            {{-- Status --}}
+                            <td class="px-4 py-3 text-center">
                                 @if($law->status === 'active')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
                                         ساري
                                     </span>
                                 @elseif($law->status === 'abrogated')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 inline-block"></span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200 whitespace-nowrap">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
                                         ملغى
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block"></span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></span>
                                         مسودة
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3.5 text-center hidden sm:table-cell">
-                                @if($law->isProcessed())
-                                    <span class="inline-flex items-center gap-1 text-xs text-emerald-600">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12"/></svg>
-                                        معالج
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 text-xs text-amber-600">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5 animate-spin"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="10"/></svg>
-                                        معالجة
-                                    </span>
-                                @endif
+
+                            {{-- Date added --}}
+                            <td class="px-4 py-3 hidden xl:table-cell">
+                                <div class="text-xs text-slate-500 whitespace-nowrap"
+                                     title="{{ $law->created_at->format('Y-m-d H:i') }}">
+                                    {{ $law->created_at->diffForHumans() }}
+                                </div>
+                                <div class="text-[10px] text-slate-400 mt-0.5 tabular-nums">
+                                    {{ $law->created_at->format('Y/m/d') }}
+                                </div>
                             </td>
-                            <td class="px-4 py-3.5 text-center" onclick="event.stopPropagation()">
-                                <div class="flex items-center justify-center gap-1">
+
+                            {{-- Actions --}}
+                            <td class="px-4 py-3 text-center" onclick="event.stopPropagation()">
+                                <div class="flex items-center justify-center gap-0.5">
                                     <a href="{{ route('law-library.show', $law) }}"
                                        class="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer"
                                        title="عرض">
@@ -212,15 +258,18 @@
             </table>
         </div>
 
-        {{-- Table footer --}}
-        <div class="px-5 py-3.5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-4 text-sm text-slate-500">
-            <span>
-                عرض {{ $laws->firstItem() }}–{{ $laws->lastItem() }} من {{ number_format($laws->total()) }} نظام
-            </span>
-            <div>
-                {{ $laws->links() }}
-            </div>
+        {{-- Table footer / Pagination --}}
+        @if($laws->hasPages())
+        <div class="px-5 py-4 border-t border-slate-100 bg-slate-50/30">
+            {{ $laws->links() }}
         </div>
+        @else
+        <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/30 text-right">
+            <p class="text-sm text-slate-500">
+                إجمالي <span class="font-semibold text-slate-700">{{ number_format($laws->total()) }}</span> نظام
+            </p>
+        </div>
+        @endif
     </div>
 @endif
 
